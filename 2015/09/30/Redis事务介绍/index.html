@@ -1,0 +1,809 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+    
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.4"/>
+
+
+    <meta name="description" content="互联网技术分享。" />
+
+
+
+  <meta name="keywords" content="NoSQL,Redis," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="winwill2012博客" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/it.jpg?v=0.4.4" />
+
+
+<meta name="description" content="概述相信学过Mysql等其他数据库的同学对事务这个词都不陌生，事务表示的是一组动作，这组动作要么全部执行，要么全部不执行。为什么会有这样的需求呢？看看下面的场景：
+
+
+微博是一个弱关系型社交网络，用户之间有关注和被关注两种关系，比如两个用户A和B，如果A关注B，则B的粉丝中就应该有A。关注这个动作需要两个步骤完成：在A的关注者中添加B；在B的粉丝中添加A。 这两个动作要么都执行成功，要么都不执行。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis事务介绍">
+<meta property="og:url" content="http://qifuguang.me/2015/09/30/Redis事务介绍/index.html">
+<meta property="og:site_name" content="winwill2012博客">
+<meta property="og:description" content="概述相信学过Mysql等其他数据库的同学对事务这个词都不陌生，事务表示的是一组动作，这组动作要么全部执行，要么全部不执行。为什么会有这样的需求呢？看看下面的场景：
+
+
+微博是一个弱关系型社交网络，用户之间有关注和被关注两种关系，比如两个用户A和B，如果A关注B，则B的粉丝中就应该有A。关注这个动作需要两个步骤完成：在A的关注者中添加B；在B的粉丝中添加A。 这两个动作要么都执行成功，要么都不执行。">
+<meta property="og:updated_time" content="2015-10-25T09:11:47.402Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis事务介绍">
+<meta name="twitter:description" content="概述相信学过Mysql等其他数据库的同学对事务这个词都不陌生，事务表示的是一组动作，这组动作要么全部执行，要么全部不执行。为什么会有这样的需求呢？看看下面的场景：
+
+
+微博是一个弱关系型社交网络，用户之间有关注和被关注两种关系，比如两个用户A和B，如果A关注B，则B的粉丝中就应该有A。关注这个动作需要两个步骤完成：在A的关注者中添加B；在B的粉丝中添加A。 这两个动作要么都执行成功，要么都不执行。">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+    <meta name="baidu-site-verification" content="3psLs4WOzI" />
+    <meta name="google-site-verification" content="RoBjsg5UiQ-F5HGaD803AcfeRCq114IZ89Gwzwgggjw" />
+    <meta name="360-site-verification" content="52e528e03d1db531cca13941b1535780" />
+    <meta name="sogou_site_verification" content="O5Bkv6XkHY"/>
+    <meta name="msvalidate.01" content="1925D7FF445400625C2530D7521576C4" />
+    <meta name="ujianVerification" content="500a18bd7004c449ee0e618cf997de32" />
+    <link rel="shortcut icon" href="http://7xlune.com1.z0.glb.clouddn.com/images/logo.png" type="image/x-icon" />
+    <title> Redis事务介绍 | winwill2012博客 </title>
+</head>
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+<!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+
+
+<script>
+    var _hmt = _hmt || [];
+    (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?bb4684f9c6c7a8ce235dad0dd9307c52";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+
+
+<div class="container one-column page-post-detail">
+    <div class="headband"></div>
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+        <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-logo"></i>
+      </span>
+      <span class="site-title">winwill2012博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu menu-left">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-about"></i> <br />
+            关于&留言
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  <div class="site-search">
+    <form class="site-search-form">
+      <input type="text" id="bdcsMain" class="st-search-input st-default-search-input" />
+    </form>
+  <script type="text/javascript">
+  (function(){
+    document.write(unescape('%3Cdiv id="bdcs"%3E%3C/div%3E'));
+    var bdcs = document.createElement('script');bdcs.type = 'text/javascript';bdcs.async = true;
+    bdcs.src = 'http://znsv.baidu.com/customer_search/api/js?sid=6348728132870376258' + '&plate_url=' + encodeURIComponent(window.location.href) + '&t=' + Math.ceil(new Date()/3600000);
+    var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bdcs, s);})();
+  </script>
+  <div class="site-search-toggle"></div>
+  </div>
+</nav>
+
+
+        </div>
+    </header>
+
+    <main id="main" class="main">
+        <div class="main-inner">
+            <div id="content" class="content">
+                
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Redis事务介绍
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+            <i class="icon-date" style="display: inline-block;margin: 0 2px;"></i>
+            2015-09-30
+        </span>
+        
+          &nbsp;&nbsp;
+          <span class="post-category" >
+            <i class="icon-cate" style="display: inline-block;margin: 0 2px;" width="20px"></i>
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a></span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a href="/categories/Redis/NoSQL/" itemprop="url" rel="index"><span itemprop="name">NoSQL</span></a></span>
+
+              
+              
+
+            
+          </span>
+        
+        
+            &nbsp;&nbsp;
+            <i class="icon-views" style="display: inline-block;margin: 0 2px;"></i>
+            热度<span id="busuanzi_container_page_pv" style="display:none"><span id="busuanzi_value_page_pv"></span>℃
+            </span>
+        
+        
+          
+              &nbsp;&nbsp;
+              <i class="icon-comments" style="display: inline-block;margin: 0 2px;"></i>
+              <a href="/2015/09/30/Redis事务介绍/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2015/09/30/Redis事务介绍/" itemprop="commentsCount"></span>
+              </a>
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h1 id="概述">概述</h1><p>相信学过Mysql等其他数据库的同学对事务这个词都不陌生，事务表示的是一组动作，这组动作要么全部执行，要么全部不执行。为什么会有这样的需求呢？看看下面的场景：</p>
+<blockquote>
+<ul>
+<li>微博是一个弱关系型社交网络，用户之间有关注和被关注两种关系，比如两个用户A和B，如果A关注B，则B的粉丝中就应该有A。关注这个动作需要两个步骤完成：在A的关注者中添加B；在B的粉丝中添加A。 这两个动作要么都执行成功，要么都不执行。否则就可能会出现A关注了B，但是B的粉丝中没有A的不可容忍的情况。</li>
+<li>转账汇款，假设现在有两个账户A和B，现在需要将A中的一万块大洋转到B的账户中，这个动作也需要两个步骤完成：从A的账户中划走一万块；在B的账户中增加一万块。这两个动作要么全部执行成功，要么全部不执行，否则自会有人问候你的！！！</li>
+</ul>
+</blockquote>
+<a id="more"></a>
+<p>Redis作为一种高效的分布式数据库，同样支持事务。</p>
+<h1 id="Redis事务">Redis事务</h1><p>Redis中的事务(transaction)是一组命令的集合。事务同命令一样都是Redis最小的执行单位，一个事务中的命令要么都执行，要么都不执行。Redis事务的实现需要用到<strong> MULTI </strong>和<strong> EXEC </strong>两个命令，事务开始的时候先向Redis服务器发送<strong> MULTI </strong>命令，然后依次发送需要在本次事务中处理的命令，最后再发送<strong> EXEC </strong>命令表示事务命令结束。</p>
+<p>举个例子，使用redis-cli连接redis，然后在命令行工具中输入如下命令：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; MULTI</span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> url http:<span class="comment">//qifuguang.me</span></span><br><span class="line">QUEUED</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> title winwill2012</span><br><span class="line">QUEUED</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> desc java</span><br><span class="line">QUEUED</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; EXEC</span><br><span class="line"><span class="number">1</span>) OK</span><br><span class="line"><span class="number">2</span>) OK</span><br><span class="line"><span class="number">3</span>) OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt;</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; get url</span><br><span class="line"><span class="string">"http://qifuguang.me"</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; get title</span><br><span class="line"><span class="string">"winwill2012"</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; get desc</span><br><span class="line"><span class="string">"java"</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt;</span><br></pre></td></tr></table></figure>
+<p>从输出中可以看到，当输入MULTI命令后，服务器返回OK表示事务开始成功，然后依次输入需要在本次事务中执行的所有命令，每次输入一个命令服务器并不会马上执行，而是返回”QUEUED”，这表示命令已经被服务器接受并且暂时保存起来，最后输入EXEC命令后，本次事务中的所有命令才会被依次执行，可以看到最后服务器一次性返回了三个OK，这里返回的结果与发送的命令是按顺序一一对应的，这说明这次事务中的命令全都执行成功了。</p>
+<p>再举个例子，在命令行工具中输入如下命令：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> <span class="constant">MULTI</span></span><br><span class="line"><span class="constant">OK</span></span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> set a a</span><br><span class="line"><span class="constant">QUEUED</span></span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> sett b b</span><br><span class="line">(error) <span class="constant">ERR</span> unknown command <span class="string">'sett'</span></span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> set c c</span><br><span class="line"><span class="constant">QUEUED</span></span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> <span class="constant">EXEC</span></span><br><span class="line">(error) <span class="constant">EXECABORT</span> <span class="constant">Transaction</span> discarded because of previous errors.</span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> get a</span><br><span class="line">(<span class="keyword">nil</span>)</span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> get b</span><br><span class="line">(<span class="keyword">nil</span>)</span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span> get c</span><br><span class="line">(<span class="keyword">nil</span>)</span><br><span class="line"><span class="prompt">127.0.0.1:6379&gt;</span></span><br></pre></td></tr></table></figure>
+<p>和前面的例子一样，先输入MULTI最后输入EXEC表示中间的命令属于一个事务，不同的是中间输入的命令有一个错误(set写成了sett)，这样因为有一个错误的命令导致事务中的其他命令都不执行了(通过后续的get命令可以验证)，可见事务中的所有命令式同呼吸共命运的。</p>
+<p>如果客户端在发送EXEC命令之前断线了，则服务器会清空事务队列，事务中的所有命令都不会被执行。而一旦客户端发送了EXEC命令之后，事务中的所有命令都会被执行，即使此后客户端断线也没关系，因为服务器已经保存了事务中的所有命令。</p>
+<p>除了保证事务中的所有命令要么全执行要么全不执行外，Redis的事务还能保证一个事务中的命令依次执行而不会被其他命令插入。试想一个客户端A需要执行几条命令，同时客户端B发送了几条命令，如果不使用事务，则客户端B的命令有可能会插入到客户端A的几条命令中，如果想避免这种情况发生，也可以使用事务。</p>
+<h1 id="Redis事务错误处理">Redis事务错误处理</h1><p>如果一个事务中的某个命令执行出错，Redis会怎样处理呢？要回答这个问题，首先要搞清楚是什么原因导致命令执行出错：</p>
+<ol>
+<li><p><strong>语法错误</strong> 就像上面的例子一样，语法错误表示命令不存在或者参数错误<br>这种情况需要区分Redis的版本，Redis 2.6.5之前的版本会忽略错误的命令，执行其他正确的命令，2.6.5之后的版本会忽略这个事务中的所有命令，都不执行，就比如上面的例子(使用的Redis版本是2.8的)</p>
+</li>
+<li><p><strong>运行错误</strong> 运行错误表示命令在执行过程中出现错误，比如用GET命令获取一个散列表类型的键值。<br>这种错误在命令执行之前Redis是无法发现的，所以在事务里这样的命令会被Redis接受并执行。如果食物里有一条命令执行错误，其他命令依旧会执行（包括出错之后的命令）。比如下例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; MULTI</span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> key <span class="number">1</span></span><br><span class="line">QUEUED</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; SADD key <span class="number">2</span></span><br><span class="line">QUEUED</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> key <span class="number">3</span></span><br><span class="line">QUEUED</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; EXEC</span><br><span class="line"><span class="number">1</span>) OK</span><br><span class="line"><span class="number">2</span>) (error) WRONGTYPE Operation against a key holding the wrong kind of value</span><br><span class="line"><span class="number">3</span>) OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; get key</span><br><span class="line"><span class="string">"3"</span></span><br></pre></td></tr></table></figure>
+<p><strong>Redis中的事务并没有关系型数据库中的事务回滚(rollback)功能，因此使用者必须自己收拾剩下的烂摊子。</strong>不过由于Redis不支持事务回滚功能，这也使得Redis的事务简洁快速。</p>
+</li>
+</ol>
+<p>回顾上面两种类型的错误，语法错误完全可以在开发的时候发现并作出处理，另外如果能很好地规划Redis数据的键的使用，也是不会出现命令和键不匹配的问题的。</p>
+<h1 id="WATCH命令">WATCH命令</h1><p>从上面的例子我们可以看到，事务中的命令要全部执行完之后才能获取每个命令的结果，但是如果一个事务中的命令B依赖于他上一个命令A的结果的话该怎么办呢？就比如说实现类似Java中的i++的功能，先要获取当前值，才能在当前值的基础上做加一操作。这种场合仅仅使用上面介绍的MULTI和EXEC是不能实现的，因为MULTI和EXEC中的命令是一起执行的，并不能将其中一条命令的执行结果作为另一条命令的执行参数，所以这个时候就需要引进Redis事务家族中的另一成员：<strong>WATCH命令</strong></p>
+<p>换个角度思考上面说到的实现i++的方法，可以这样实现：</p>
+<blockquote>
+<ol>
+<li>监控i的值，保证i的值不被修改</li>
+<li>获取i的原值</li>
+<li>如果过程中i的值没有被修改，则将当前的i值+1，否则不执行</li>
+</ol>
+</blockquote>
+<p>这样就能够避免竞态条件，保证i++能够正确执行。</p>
+<p>WATCH命令可以监控一个或多个键，一旦其中有一个键被修改（或删除），之后的事务就不会执行，监控一直持续到EXEC命令（事务中的命令是在EXEC之后才执行的，EXEC命令执行完之后被监控的键会自动被UNWATCH）</p>
+<p>举个例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> mykey <span class="number">1</span></span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; WATCH mykey</span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> mykey <span class="number">2</span></span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; MULTI</span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; <span class="built_in">set</span> mykey <span class="number">3</span></span><br><span class="line">QUEUED</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; EXEC</span><br><span class="line">(nil)</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; get mykey</span><br><span class="line"><span class="string">"2"</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt;</span><br></pre></td></tr></table></figure>
+<p>上面的例子中，首先设置mykey的键值为1，然后使用WATCH命令监控mykey，随后更改mykey的值为2，然后进入事务，事务中设置mykey的值为3，然后执行EXEC运行事务中的命令，最后使用get命令查看mykey的值，发现mykey的值还是2，也就是说事务中的命令根本没有执行（因为WATCH监控mykey的过程中，mykey被修改了，所以随后的事务便会被取消）。</p>
+<p>有了WATCH命令，我们就可以自己实现i++功能了，伪代码如下：</p>
+<figure class="highlight xquery"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">def incr(<span class="variable">$key</span>):</span><br><span class="line">    WATCH <span class="variable">$key</span></span><br><span class="line">    <span class="variable">$value</span> = GET <span class="variable">$key</span></span><br><span class="line">    <span class="keyword">if</span> not <span class="variable">$value</span></span><br><span class="line">        <span class="variable">$value</span> = <span class="number">0</span></span><br><span class="line">    <span class="variable">$value</span> = <span class="variable">$value</span> + <span class="number">1</span></span><br><span class="line">    </span><br><span class="line">    MULTI</span><br><span class="line">    SET <span class="variable">$key</span> <span class="variable">$value</span></span><br><span class="line">        result = EXEC</span><br><span class="line">    <span class="keyword">return</span> result[<span class="number">0</span>]</span><br></pre></td></tr></table></figure>
+<p>因为EXEC返回的是多行字符串，使用result[0]表示返回值的第一个字符串。</p>
+<p><strong>注意：由于WATCH命令的作用只是当被监控的键被修改后取消之后的事务，并不能保证其他客户端不修改监控的值，所以当EXEC命令执行失败之后需要手动重新执行整个事务。</strong></p>
+<p>执行EXEC命令之后会取消监控使用WATCH命令监控的键，如果不想执行事务中的命令，也可以使用UNWATCH命令来取消监控。</p>
+<h1 id="声明">声明</h1><p>本文为原创，转载请注明出处，本文链接：<a href="http://qifuguang.me/2015/09/30/Redis事务介绍/">http://qifuguang.me/2015/09/30/Redis事务介绍/</a></p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          <i class="icon-tag" style="display: inline-block;margin: 0 2px;"></i>
+          
+            <a href="/tags/NoSQL/" rel="tag">NoSQL</a>
+          
+            <a href="/tags/Redis/" rel="tag">Redis</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/09/30/Redis过期机制介绍/" rel="prev">Redis过期机制介绍</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/09/29/Redis五种数据类型介绍/" rel="next">Redis五种数据类型介绍</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+    
+        <!-- UJian Button BEGIN -->
+        <div class="ujian-hook"></div>
+        <script type="text/javascript">var ujian_config = {picSize:84,textHeight:45};</script>
+        <script type="text/javascript" src="http://v1.ujian.cc/code/ujian.js?uid=2051639"></script>
+        <a href="http://www.ujian.cc" style="border:0;"><img src="http://img.ujian.cc/pixel.png" alt="友荐云推荐" style="border:0;padding:0;margin:0;" /></a>
+        <!-- UJian Button END -->
+    
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+
+            </div>
+
+            
+
+            
+              <div class="comments" id="comments">
+                
+                  <div class="ds-thread" data-thread-key="2015/09/30/Redis事务介绍/"
+                       data-title="Redis事务介绍" data-url="http://qifuguang.me/2015/09/30/Redis事务介绍/">
+                  </div>
+                
+              </div>
+            
+        </div>
+
+        
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="http://7xlune.com1.z0.glb.clouddn.com/images/qifuguang.png" alt="winwill2012" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">winwill2012</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">互联网技术分享。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">52</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">18</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/3497016832/profile?topnav=1&wvr=6" target="_blank" rel="external nofollow">新浪微博</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.zhihu.com/people/winwill2012" target="_blank" rel="external nofollow">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.douban.com/people/129019278/" target="_blank" rel="external nofollow">豆瓣</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://gitcafe.com/winwill2012" target="_blank" rel="external nofollow">Gitcafe</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank" rel="external nofollow">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            <p class="site-author-name">友情链接</p>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.csdn.net/winwill2012" target="_blank">我的CSDN博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.163.com/scuqifuguang@126/" target="_blank">我的网易博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://lusongsong.com/" target="_blank">卢松松博客</a>
+              </span>
+            
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis事务"><span class="nav-number">2.</span> <span class="nav-text">Redis事务</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis事务错误处理"><span class="nav-number">3.</span> <span class="nav-text">Redis事务错误处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#WATCH命令"><span class="nav-number">4.</span> <span class="nav-text">WATCH命令</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#声明"><span class="nav-number">5.</span> <span class="nav-text">声明</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2015</span>
+  <span class="with-love">
+    <i class="icon-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">winwill2012&nbsp;&nbsp;|&nbsp;&nbsp;winwill2012个人技术博客</span>
+</div>
+
+<div class="powered-by">
+  由Hexo强力驱动
+</div>
+
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<span><a href="http://qifuguang.me/sitemap.xml">google网站地图</a></span>
+<span><a href="http://qifuguang.me/baidusitemap.xml">&nbsp;&nbsp;|&nbsp;&nbsp;百度网站地图</a></span>
+<span id="busuanzi_container_site_pv" style='display:none'> &nbsp;&nbsp;|&nbsp;&nbsp;本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+<br>
+<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1256031805'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s11.cnzz.com/z_stat.php%3Fid%3D1256031805%26online%3D1%26show%3Dline' type='text/javascript'%3E%3C/script%3E"));</script>
+
+        </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+</div>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"winwill2012-hexo"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementById('footer')
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+     
+  	  <script type="text/javascript">
+  		var duoshuo_user_ID = winwill2012
+  	  </script>
+     
+  	<script src="/js/ua-parser.min.js"></script>
+  	<script src="/js/hook-duoshuo.js"></script>
+  
+
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.4"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.4"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.4" id="motion.global"></script>
+
+
+
+  <script type="text/javascript" src="/js/search-toggle.js"></script>
+
+
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.4" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        if (CONFIG.sidebar === 'always') {
+            displaySidebar();
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+<!-- lazyload -->
+<script type="text/javascript" src="/js/lazyload.js"></script>
+<script type="text/javascript">
+    jQuery(function () {
+        jQuery("#posts img").lazyload({
+            placeholder: "/images/loading.gif",
+            effect: "fadeIn"
+        });
+    });
+</script>
+</body>
+</html>

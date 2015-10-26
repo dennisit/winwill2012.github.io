@@ -1,0 +1,873 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+    
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.4"/>
+
+
+    <meta name="description" content="互联网技术分享。" />
+
+
+
+  <meta name="keywords" content="日志处理," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="winwill2012博客" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/it.jpg?v=0.4.4" />
+
+
+<meta name="description" content="概述Log4j有三个主要的组件：Loggers(记录器)，Appenders (输出源)和Layouts(布局)。这里可简单理解为日志类别，日志要输出的地方和日志以何种形式输出。综合使用这三个组件可以轻松地记录信息的类型和级别，并可以在运行时控制日志输出的样式和位置。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[日志处理]log4j配置详解">
+<meta property="og:url" content="http://qifuguang.me/2015/08/31/[日志处理]log4j配置详解/index.html">
+<meta property="og:site_name" content="winwill2012博客">
+<meta property="og:description" content="概述Log4j有三个主要的组件：Loggers(记录器)，Appenders (输出源)和Layouts(布局)。这里可简单理解为日志类别，日志要输出的地方和日志以何种形式输出。综合使用这三个组件可以轻松地记录信息的类型和级别，并可以在运行时控制日志输出的样式和位置。">
+<meta property="og:updated_time" content="2015-10-25T09:11:47.406Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[日志处理]log4j配置详解">
+<meta name="twitter:description" content="概述Log4j有三个主要的组件：Loggers(记录器)，Appenders (输出源)和Layouts(布局)。这里可简单理解为日志类别，日志要输出的地方和日志以何种形式输出。综合使用这三个组件可以轻松地记录信息的类型和级别，并可以在运行时控制日志输出的样式和位置。">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+    <meta name="baidu-site-verification" content="3psLs4WOzI" />
+    <meta name="google-site-verification" content="RoBjsg5UiQ-F5HGaD803AcfeRCq114IZ89Gwzwgggjw" />
+    <meta name="360-site-verification" content="52e528e03d1db531cca13941b1535780" />
+    <meta name="sogou_site_verification" content="O5Bkv6XkHY"/>
+    <meta name="msvalidate.01" content="1925D7FF445400625C2530D7521576C4" />
+    <meta name="ujianVerification" content="500a18bd7004c449ee0e618cf997de32" />
+    <link rel="shortcut icon" href="http://7xlune.com1.z0.glb.clouddn.com/images/logo.png" type="image/x-icon" />
+    <title> [日志处理]log4j配置详解 | winwill2012博客 </title>
+</head>
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+<!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+
+
+<script>
+    var _hmt = _hmt || [];
+    (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?bb4684f9c6c7a8ce235dad0dd9307c52";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+
+
+<div class="container one-column page-post-detail">
+    <div class="headband"></div>
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+        <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-logo"></i>
+      </span>
+      <span class="site-title">winwill2012博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu menu-left">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-about"></i> <br />
+            关于&留言
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  <div class="site-search">
+    <form class="site-search-form">
+      <input type="text" id="bdcsMain" class="st-search-input st-default-search-input" />
+    </form>
+  <script type="text/javascript">
+  (function(){
+    document.write(unescape('%3Cdiv id="bdcs"%3E%3C/div%3E'));
+    var bdcs = document.createElement('script');bdcs.type = 'text/javascript';bdcs.async = true;
+    bdcs.src = 'http://znsv.baidu.com/customer_search/api/js?sid=6348728132870376258' + '&plate_url=' + encodeURIComponent(window.location.href) + '&t=' + Math.ceil(new Date()/3600000);
+    var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bdcs, s);})();
+  </script>
+  <div class="site-search-toggle"></div>
+  </div>
+</nav>
+
+
+        </div>
+    </header>
+
+    <main id="main" class="main">
+        <div class="main-inner">
+            <div id="content" class="content">
+                
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [日志处理]log4j配置详解
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+            <i class="icon-date" style="display: inline-block;margin: 0 2px;"></i>
+            2015-08-31
+        </span>
+        
+          &nbsp;&nbsp;
+          <span class="post-category" >
+            <i class="icon-cate" style="display: inline-block;margin: 0 2px;" width="20px"></i>
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a href="/categories/日志处理/" itemprop="url" rel="index"><span itemprop="name">日志处理</span></a></span>
+
+              
+              
+
+            
+          </span>
+        
+        
+            &nbsp;&nbsp;
+            <i class="icon-views" style="display: inline-block;margin: 0 2px;"></i>
+            热度<span id="busuanzi_container_page_pv" style="display:none"><span id="busuanzi_value_page_pv"></span>℃
+            </span>
+        
+        
+          
+              &nbsp;&nbsp;
+              <i class="icon-comments" style="display: inline-block;margin: 0 2px;"></i>
+              <a href="/2015/08/31/[日志处理]log4j配置详解/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2015/08/31/[日志处理]log4j配置详解/" itemprop="commentsCount"></span>
+              </a>
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h1 id="概述">概述</h1><p>Log4j有三个主要的组件：Loggers(记录器)，Appenders (输出源)和Layouts(布局)。这里可简单理解为日志类别，日志要输出的地方和日志以何种形式输出。综合使用这三个组件可以轻松地记录信息的类型和级别，并可以在运行时控制日志输出的样式和位置。</p>
+<a id="more"></a>
+<h2 id="Logger">Logger</h2><p>Loggers组件被分为五个级别：</p>
+<ul>
+<li>DEBUG</li>
+<li>INFO</li>
+<li>WARN</li>
+<li>ERROR</li>
+<li>FATAL  </li>
+</ul>
+<p>各个级别的顺序是这样那个的：</p>
+<blockquote>
+<p><strong>DEBUG &lt; INFO &lt; WARN &lt; ERROR &lt; FATAL</strong></p>
+</blockquote>
+<p>可以简单地理解为级别越大越重要。<br>Log4j有一个规则：只输出级别不低于设定级别的日志信息，假设Loggers级别设定为INFO，则INFO、WARN、ERROR和FATAL级别的日志信息都会输出，而级别比INFO低的DEBUG则不会输出。</p>
+<h2 id="Appender">Appender</h2><p>Appender用来规定日志输出的目的地是哪里，可以是控制台，文件，数据库等等。<br>常见的Appender有以下几种：</p>
+<ul>
+<li>org.apache.log4j.ConsoleAppender（控制台）</li>
+<li>org.apache.log4j.FileAppender（文件）</li>
+<li>org.apache.log4j.DailyRollingFileAppender（每天产生一个日志文件）</li>
+<li>org.apache.log4j.RollingFileAppender（文件大小到达指定尺寸的时候产生一个新的文件）</li>
+<li>org.apache.log4j.WriterAppender（将日志信息以流格式发送到任意指定的地方）</li>
+</ul>
+<p>在配置文件中是这样配置的：</p>
+<blockquote>
+<p>log4j.appender.appenderName = className<br>log4j.appender.appenderName.Option1 = value1<br>…<br>log4j.appender.appenderName.OptionN = valueN  </p>
+</blockquote>
+<p>其中appenderName是Appender的名字，可以随意起，只要满足命名规范就行，Option1，Option2，…，OptionN是这个appender的各种属性。</p>
+<h2 id="Layout">Layout</h2><p>Layout用来规定日志是以什么样的格式输出，需要输出哪些信息。Layout提供四种日志输出样式，如根据HTML样式、自由指定样式、包含日志级别与信息的样式和包含日志时间、线程、类别等信息的样式。<br>常见的Layout如下：</p>
+<ul>
+<li>org.apache.log4j.HTMLLayout（以HTML表格形式布局）</li>
+<li>org.apache.log4j.PatternLayout（可以灵活地指定布局模式）</li>
+<li>org.apache.log4j.SimpleLayout（包含日志信息的级别和信息字符串）</li>
+<li>org.apache.log4j.TTCCLayout（包含日志产生的时间、线程、类别等信息）</li>
+</ul>
+<p>在配置文件中这样配置的：</p>
+<blockquote>
+<p>log4j.appender.appenderName.layout =className<br>log4j.appender.appenderName.layout.Option1 = value1<br>…<br>log4j.appender.appenderName.layout.OptionN = valueN  </p>
+</blockquote>
+<p>含义和Appender的配置是一样的，就不另作解释了。</p>
+<h2 id="配置详解">配置详解</h2><p>在实际应用中，要使Log4j在系统中运行须事先设定配置文件。配置文件事实上也就是对Logger、Appender及Layout进行相应设定。 Log4j支持两种配置文件格式，一种是XML格式的文件，一种是properties属性文件。下面以properties属性文件为例介绍。</p>
+<h3 id="配置Logger">配置Logger</h3><blockquote>
+<p>log4j.rootLogger = [ level ] , appenderName1, appenderName2, …<br>log4j.additivity.org.apache=false # 表示Logger不会在父Logger的appender里输出，默认为true。  </p>
+</blockquote>
+<p><strong>level</strong> ：设定日志记录的最低级别，可设的值有OFF、FATAL、ERROR、WARN、INFO、DEBUG、ALL或者自定义的级别，Log4j建议只使用中间四个级别。通过在这里设定级别，您可以控制应用程序中相应级别的日志信息的开关，比如在这里设定了INFO级别，则应用程序中所有DEBUG级别的日志信息将不会被打印出来。<br><strong>appenderName</strong>：就是指定日志信息要输出到哪里。可以同时指定多个输出目的地，用逗号隔开。<br>例如：log4j.rootLogger＝INFO,A1,B2,C3</p>
+<h3 id="配置Appender">配置Appender</h3><blockquote>
+<p>log4j.appender.appenderName = className</p>
+</blockquote>
+<p><strong>appenderName</strong>: Appender的名字，自定义，在log4j.rootLogger设置中使用；<br><strong>className</strong>：Appender的类的全名（包含包名），常用的Appender的className如下：</p>
+<ul>
+<li>org.apache.log4j.ConsoleAppender（控制台）</li>
+<li>org.apache.log4j.FileAppender（文件）</li>
+<li>org.apache.log4j.DailyRollingFileAppender（每天产生一个日志文件）</li>
+<li>org.apache.log4j.RollingFileAppender（文件大小到达指定尺寸的时候产生一个新的文件）</li>
+<li>org.apache.log4j.WriterAppender（将日志信息以流格式发送到任意指定的地方）</li>
+</ul>
+<h4 id="ConsoleAppender的选项">ConsoleAppender的选项</h4><ul>
+<li><strong>Threshold</strong>=WARN：指定日志信息的最低输出级别，默认为DEBUG。</li>
+<li><strong>ImmediateFlush</strong>=true：表示所有消息都会被立即输出，设为false则不输出，默认值是true。</li>
+<li><strong>Target</strong>=System.err：默认值是System.out。</li>
+</ul>
+<h4 id="FileAppender选项">FileAppender选项</h4><ul>
+<li><strong>Threshold</strong>=WARN：指定日志信息的最低输出级别，默认为DEBUG。</li>
+<li><strong>ImmediateFlush</strong>=true：表示所有消息都会被立即输出，设为false则不输出，默认值是true。</li>
+<li><strong>Append</strong>=false：true表示消息增加到指定文件中，false则将消息覆盖指定的文件内容，默认值是true。</li>
+<li><strong>File</strong>=D:/logs/logging.log4j：指定消息输出到logging.log4j文件中</li>
+</ul>
+<h4 id="DailyRollingFileAppender选项">DailyRollingFileAppender选项</h4><ul>
+<li><strong>Threshold</strong>=WARN：指定日志信息的最低输出级别，默认为DEBUG。</li>
+<li><strong>ImmediateFlush</strong>=true：表示所有消息都会被立即输出，设为false则不输出，默认值是true。</li>
+<li><strong>Append</strong>=false：true表示消息增加到指定文件中，false则将消息覆盖指定的文件内容，默认值是true。</li>
+<li><strong>File</strong>=D:/logs/logging.log4j：指定当前消息输出到logging.log4j文件中。</li>
+<li><strong>DatePattern</strong>=’.’yyyy-MM：每月滚动一次日志文件，即每月产生一个新的日志文件。当前月的日志文件名为logging.log4j，前一个月的日志文件名为logging.log4j.yyyy-MM。<br>另外，也可以指定按周、天、时、分等来滚动日志文件，对应的格式如下：<ul>
+<li>‘.’yyyy-MM：每月</li>
+<li>‘.’yyyy-ww：每周</li>
+<li>‘.’yyyy-MM-dd：每天</li>
+<li>‘.’yyyy-MM-dd-a：每天两次</li>
+<li>‘.’yyyy-MM-dd-HH：每小时</li>
+<li>‘.’yyyy-MM-dd-HH-mm：每分钟</li>
+</ul>
+</li>
+</ul>
+<h4 id="RollingFileAppender选项">RollingFileAppender选项</h4><ul>
+<li><strong>Threshold</strong>=WARN：指定日志信息的最低输出级别，默认为DEBUG。</li>
+<li><strong>ImmediateFlush</strong>=true：表示所有消息都会被立即输出，设为false则不输出，默认值是true。</li>
+<li><strong>Append</strong>=false：true表示消息增加到指定文件中，false则将消息覆盖指定的文件内容，默认值是true。</li>
+<li><strong>File</strong>=D:/logs/logging.log4j：指定消息输出到logging.log4j文件中。</li>
+<li><strong>MaxFileSize=100KB：后缀可以是</strong>KB, MB 或者GB**。在日志文件到达该大小时，将会自动滚动，即将原来的内容移到logging.log4j.1文件中。</li>
+<li><strong>MaxBackupIndex</strong>=2：指定可以产生的滚动文件的最大数，例如，设为2则可以产生logging.log4j.1，logging.log4j.2两个滚动文件和一个logging.log4j文件。</li>
+</ul>
+<h3 id="配置Layout">配置Layout</h3><blockquote>
+<p>log4j.appender.appenderName.layout=className</p>
+</blockquote>
+<p>常见的className如下：</p>
+<ul>
+<li>org.apache.log4j.HTMLLayout（以HTML表格形式布局）</li>
+<li>org.apache.log4j.PatternLayout（可以灵活地指定布局模式）</li>
+<li>org.apache.log4j.SimpleLayout（包含日志信息的级别和信息字符串）</li>
+<li>org.apache.log4j.TTCCLayout（包含日志产生的时间、线程、类别等等信息）</li>
+</ul>
+<h4 id="HTMLLayout选项">HTMLLayout选项</h4><ul>
+<li><strong>LocationInfo</strong>=true：输出java文件名称和行号，默认值是false。</li>
+<li><strong>Title</strong>=My Logging： 默认值是Log4J Log Messages。</li>
+</ul>
+<h4 id="PatternLayout选项">PatternLayout选项</h4><ul>
+<li><strong>ConversionPattern</strong>=%m%n：设定以怎样的格式显示消息。</li>
+</ul>
+<p>各种格式化说明如下：</p>
+<ol>
+<li>%p：输出日志信息的优先级，即DEBUG，INFO，WARN，ERROR，FATAL。</li>
+<li>%d：输出日志时间点的日期或时间，默认格式为ISO8601，也可以在其后指定格式，如：%d{yyyy/MM/dd HH:mm:ss,SSS}。</li>
+<li>%r：输出自应用程序启动到输出该log信息耗费的毫秒数。</li>
+<li>%t：输出产生该日志事件的线程名。</li>
+<li>%l：输出日志事件的发生位置，相当于%c.%M(%F:%L)的组合，包括类全名、方法、文件名以及在代码中的行数。例如：test.TestLog4j.main(TestLog4j.java:10)。</li>
+<li>%c：输出日志信息所属的类目，通常就是所在类的全名。</li>
+<li>%M：输出产生日志信息的方法名。</li>
+<li>%F：输出日志消息产生时所在的文件名称。</li>
+<li>%L:：输出代码中的行号。</li>
+<li>%m:：输出代码中指定的具体日志信息。</li>
+<li>%n：输出一个回车换行符，Windows平台为”\r\n”，Unix平台为”\n”。</li>
+<li>%x：输出和当前线程相关联的NDC(嵌套诊断环境)，尤其用到像java servlets这样的多客户多线程的应用中。</li>
+<li>%%：输出一个”%”字符。</li>
+</ol>
+<p>另外，还可以在%与格式字符之间加上修饰符来控制其最小长度、最大长度、和文本的对齐方式。如：</p>
+<ul>
+<li>c：指定输出category的名称，最小的长度是20，如果category的名称长度小于20的话，默认的情况下右对齐。</li>
+<li>%-20c：”-“号表示左对齐。</li>
+<li>%.30c：指定输出category的名称，最大的长度是30，如果category的名称长度大于30的话，就会将左边多出的字符截掉，但小于30的话也不会补空格。</li>
+</ul>
+<h2 id="log4j的默认配置">log4j的默认配置</h2><p>log4j配置支持xml和properties两种格式的文件，默认先在程序的classpath目录下检查是否有log4j.xml文件，如果没有再出招log4j.properties文件。<br>log4j的包中的LogManager类在加载的时候有个静态代码块是这样写的：</p>
+<figure class="highlight openscad"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">static &#123;</span><br><span class="line">    <span class="comment">// By default we use a DefaultRepositorySelector which always returns 'h'.</span></span><br><span class="line">    Hierarchy h = new Hierarchy<span class="params">(new RootLogger<span class="params">(<span class="params">(Level)</span> Level.DEBUG)</span>)</span>;</span><br><span class="line">    repositorySelector = new DefaultRepositorySelector<span class="params">(h)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** Search for the properties file log4j.properties in the CLASSPATH.  */</span></span><br><span class="line">    String override =OptionConverter.getSystemProperty<span class="params">(DEFAULT_INIT_OVERRIDE_KEY,</span><br><span class="line">                               null)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if there is no default init override, then get the resource</span></span><br><span class="line">    <span class="comment">// specified by the user or the default config file.</span></span><br><span class="line">    <span class="keyword">if</span><span class="params">(override == null || <span class="string">"false"</span>.equalsIgnoreCase<span class="params">(override)</span>)</span> &#123;</span><br><span class="line"></span><br><span class="line">      String configurationOptionStr = OptionConverter.getSystemProperty<span class="params">(</span><br><span class="line">                              DEFAULT_CONFIGURATION_KEY, </span><br><span class="line">                              null)</span>;</span><br><span class="line"></span><br><span class="line">      String configuratorClassName = OptionConverter.getSystemProperty<span class="params">(</span><br><span class="line">                                                   CONFIGURATOR_CLASS_KEY, </span><br><span class="line">                           null)</span>;</span><br><span class="line"></span><br><span class="line">      URL url = null;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// if the user has not specified the log4j.configuration</span></span><br><span class="line">      <span class="comment">// property, we search first for the file "log4j.xml" and then</span></span><br><span class="line">      <span class="comment">// "log4j.properties"</span></span><br><span class="line">      <span class="keyword">if</span><span class="params">(configurationOptionStr == null)</span> &#123;  </span><br><span class="line">    url = Loader.getResource<span class="params">(DEFAULT_XML_CONFIGURATION_FILE)</span>;</span><br><span class="line">    <span class="keyword">if</span><span class="params">(url == null)</span> &#123;</span><br><span class="line">      url = Loader.getResource<span class="params">(DEFAULT_CONFIGURATION_FILE)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">      url = new URL<span class="params">(configurationOptionStr)</span>;</span><br><span class="line">    &#125; catch <span class="params">(MalformedURLException ex)</span> &#123;</span><br><span class="line">      <span class="comment">// so, resource is not a URL:</span></span><br><span class="line">      <span class="comment">// attempt to get the resource from the class path</span></span><br><span class="line">      url = Loader.getResource<span class="params">(configurationOptionStr)</span>; </span><br><span class="line">    &#125;   </span><br><span class="line">      &#125;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// If we have a non-null url, then delegate the rest of the</span></span><br><span class="line">      <span class="comment">// configuration to the OptionConverter.selectAndConfigure</span></span><br><span class="line">      <span class="comment">// method.</span></span><br><span class="line">      <span class="keyword">if</span><span class="params">(url != null)</span> &#123;</span><br><span class="line">    LogLog.debug<span class="params">(<span class="string">"Using URL ["</span>+url+<span class="string">"] for automatic log4j configuration."</span>)</span>;      </span><br><span class="line">    OptionConverter.selectAndConfigure<span class="params">(url, configuratorClassName, </span><br><span class="line">                       LogManager.getLoggerRepository<span class="params">()</span>)</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    LogLog.debug<span class="params">(<span class="string">"Could not find resource: ["</span>+configurationOptionStr+<span class="string">"]."</span>)</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;  </span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          <i class="icon-tag" style="display: inline-block;margin: 0 2px;"></i>
+          
+            <a href="/tags/日志处理/" rel="tag">日志处理</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/08/31/A记录与CNAME记录介绍/" rel="prev">A记录和CNAME记录介绍</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/08/26/[日志处理]slf4j的优势与使用原理/" rel="next">[日志处理]slf4j的优势与使用原理</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+    
+        <!-- UJian Button BEGIN -->
+        <div class="ujian-hook"></div>
+        <script type="text/javascript">var ujian_config = {picSize:84,textHeight:45};</script>
+        <script type="text/javascript" src="http://v1.ujian.cc/code/ujian.js?uid=2051639"></script>
+        <a href="http://www.ujian.cc" style="border:0;"><img src="http://img.ujian.cc/pixel.png" alt="友荐云推荐" style="border:0;padding:0;margin:0;" /></a>
+        <!-- UJian Button END -->
+    
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+
+            </div>
+
+            
+
+            
+              <div class="comments" id="comments">
+                
+                  <div class="ds-thread" data-thread-key="2015/08/31/[日志处理]log4j配置详解/"
+                       data-title="[日志处理]log4j配置详解" data-url="http://qifuguang.me/2015/08/31/[日志处理]log4j配置详解/">
+                  </div>
+                
+              </div>
+            
+        </div>
+
+        
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="http://7xlune.com1.z0.glb.clouddn.com/images/qifuguang.png" alt="winwill2012" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">winwill2012</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">互联网技术分享。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">52</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">18</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/3497016832/profile?topnav=1&wvr=6" target="_blank" rel="external nofollow">新浪微博</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.zhihu.com/people/winwill2012" target="_blank" rel="external nofollow">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.douban.com/people/129019278/" target="_blank" rel="external nofollow">豆瓣</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://gitcafe.com/winwill2012" target="_blank" rel="external nofollow">Gitcafe</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank" rel="external nofollow">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            <p class="site-author-name">友情链接</p>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.csdn.net/winwill2012" target="_blank">我的CSDN博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.163.com/scuqifuguang@126/" target="_blank">我的网易博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://lusongsong.com/" target="_blank">卢松松博客</a>
+              </span>
+            
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Logger"><span class="nav-number">1.1.</span> <span class="nav-text">Logger</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Appender"><span class="nav-number">1.2.</span> <span class="nav-text">Appender</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Layout"><span class="nav-number">1.3.</span> <span class="nav-text">Layout</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置详解"><span class="nav-number">1.4.</span> <span class="nav-text">配置详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#配置Logger"><span class="nav-number">1.4.1.</span> <span class="nav-text">配置Logger</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置Appender"><span class="nav-number">1.4.2.</span> <span class="nav-text">配置Appender</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ConsoleAppender的选项"><span class="nav-number">1.4.2.1.</span> <span class="nav-text">ConsoleAppender的选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileAppender选项"><span class="nav-number">1.4.2.2.</span> <span class="nav-text">FileAppender选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DailyRollingFileAppender选项"><span class="nav-number">1.4.2.3.</span> <span class="nav-text">DailyRollingFileAppender选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RollingFileAppender选项"><span class="nav-number">1.4.2.4.</span> <span class="nav-text">RollingFileAppender选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置Layout"><span class="nav-number">1.4.3.</span> <span class="nav-text">配置Layout</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#HTMLLayout选项"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">HTMLLayout选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PatternLayout选项"><span class="nav-number">1.4.3.2.</span> <span class="nav-text">PatternLayout选项</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#log4j的默认配置"><span class="nav-number">1.5.</span> <span class="nav-text">log4j的默认配置</span></a></li></ol></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2015</span>
+  <span class="with-love">
+    <i class="icon-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">winwill2012&nbsp;&nbsp;|&nbsp;&nbsp;winwill2012个人技术博客</span>
+</div>
+
+<div class="powered-by">
+  由Hexo强力驱动
+</div>
+
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<span><a href="http://qifuguang.me/sitemap.xml">google网站地图</a></span>
+<span><a href="http://qifuguang.me/baidusitemap.xml">&nbsp;&nbsp;|&nbsp;&nbsp;百度网站地图</a></span>
+<span id="busuanzi_container_site_pv" style='display:none'> &nbsp;&nbsp;|&nbsp;&nbsp;本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+<br>
+<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1256031805'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s11.cnzz.com/z_stat.php%3Fid%3D1256031805%26online%3D1%26show%3Dline' type='text/javascript'%3E%3C/script%3E"));</script>
+
+        </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+</div>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"winwill2012-hexo"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementById('footer')
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+     
+  	  <script type="text/javascript">
+  		var duoshuo_user_ID = winwill2012
+  	  </script>
+     
+  	<script src="/js/ua-parser.min.js"></script>
+  	<script src="/js/hook-duoshuo.js"></script>
+  
+
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.4"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.4"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.4" id="motion.global"></script>
+
+
+
+  <script type="text/javascript" src="/js/search-toggle.js"></script>
+
+
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.4" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        if (CONFIG.sidebar === 'always') {
+            displaySidebar();
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+<!-- lazyload -->
+<script type="text/javascript" src="/js/lazyload.js"></script>
+<script type="text/javascript">
+    jQuery(function () {
+        jQuery("#posts img").lazyload({
+            placeholder: "/images/loading.gif",
+            effect: "fadeIn"
+        });
+    });
+</script>
+</body>
+</html>

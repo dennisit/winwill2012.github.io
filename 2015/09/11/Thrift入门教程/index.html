@@ -1,0 +1,811 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+    
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.4"/>
+
+
+    <meta name="description" content="互联网技术分享。" />
+
+
+
+  <meta name="keywords" content="thrift," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="winwill2012博客" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/it.jpg?v=0.4.4" />
+
+
+<meta name="description" content="概述Thrift最初由Facebook研发，主要用于各个服务之间的RPC通信，支持跨语言，常用的语言比如C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell, C#, Cocoa, JavaScript, Node.js, Smalltalk, and OCaml都支持。Thrift是一个典型的CS（客户端/服务端）结构，客户端和服务端可以使用不同">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Thrift入门教程">
+<meta property="og:url" content="http://qifuguang.me/2015/09/11/Thrift入门教程/index.html">
+<meta property="og:site_name" content="winwill2012博客">
+<meta property="og:description" content="概述Thrift最初由Facebook研发，主要用于各个服务之间的RPC通信，支持跨语言，常用的语言比如C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell, C#, Cocoa, JavaScript, Node.js, Smalltalk, and OCaml都支持。Thrift是一个典型的CS（客户端/服务端）结构，客户端和服务端可以使用不同">
+<meta property="og:image" content="http://7xlune.com1.z0.glb.clouddn.com/images/Thrift入门教程/thrift-gen-java.png">
+<meta property="og:updated_time" content="2015-10-25T09:11:47.402Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Thrift入门教程">
+<meta name="twitter:description" content="概述Thrift最初由Facebook研发，主要用于各个服务之间的RPC通信，支持跨语言，常用的语言比如C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell, C#, Cocoa, JavaScript, Node.js, Smalltalk, and OCaml都支持。Thrift是一个典型的CS（客户端/服务端）结构，客户端和服务端可以使用不同">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+    <meta name="baidu-site-verification" content="3psLs4WOzI" />
+    <meta name="google-site-verification" content="RoBjsg5UiQ-F5HGaD803AcfeRCq114IZ89Gwzwgggjw" />
+    <meta name="360-site-verification" content="52e528e03d1db531cca13941b1535780" />
+    <meta name="sogou_site_verification" content="O5Bkv6XkHY"/>
+    <meta name="msvalidate.01" content="1925D7FF445400625C2530D7521576C4" />
+    <meta name="ujianVerification" content="500a18bd7004c449ee0e618cf997de32" />
+    <link rel="shortcut icon" href="http://7xlune.com1.z0.glb.clouddn.com/images/logo.png" type="image/x-icon" />
+    <title> Thrift入门教程 | winwill2012博客 </title>
+</head>
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+<!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+
+
+<script>
+    var _hmt = _hmt || [];
+    (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?bb4684f9c6c7a8ce235dad0dd9307c52";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+
+
+<div class="container one-column page-post-detail">
+    <div class="headband"></div>
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+        <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-logo"></i>
+      </span>
+      <span class="site-title">winwill2012博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu menu-left">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-about"></i> <br />
+            关于&留言
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  <div class="site-search">
+    <form class="site-search-form">
+      <input type="text" id="bdcsMain" class="st-search-input st-default-search-input" />
+    </form>
+  <script type="text/javascript">
+  (function(){
+    document.write(unescape('%3Cdiv id="bdcs"%3E%3C/div%3E'));
+    var bdcs = document.createElement('script');bdcs.type = 'text/javascript';bdcs.async = true;
+    bdcs.src = 'http://znsv.baidu.com/customer_search/api/js?sid=6348728132870376258' + '&plate_url=' + encodeURIComponent(window.location.href) + '&t=' + Math.ceil(new Date()/3600000);
+    var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bdcs, s);})();
+  </script>
+  <div class="site-search-toggle"></div>
+  </div>
+</nav>
+
+
+        </div>
+    </header>
+
+    <main id="main" class="main">
+        <div class="main-inner">
+            <div id="content" class="content">
+                
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Thrift入门教程
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+            <i class="icon-date" style="display: inline-block;margin: 0 2px;"></i>
+            2015-09-11
+        </span>
+        
+          &nbsp;&nbsp;
+          <span class="post-category" >
+            <i class="icon-cate" style="display: inline-block;margin: 0 2px;" width="20px"></i>
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a href="/categories/thrift/" itemprop="url" rel="index"><span itemprop="name">thrift</span></a></span>
+
+              
+              
+
+            
+          </span>
+        
+        
+            &nbsp;&nbsp;
+            <i class="icon-views" style="display: inline-block;margin: 0 2px;"></i>
+            热度<span id="busuanzi_container_page_pv" style="display:none"><span id="busuanzi_value_page_pv"></span>℃
+            </span>
+        
+        
+          
+              &nbsp;&nbsp;
+              <i class="icon-comments" style="display: inline-block;margin: 0 2px;"></i>
+              <a href="/2015/09/11/Thrift入门教程/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2015/09/11/Thrift入门教程/" itemprop="commentsCount"></span>
+              </a>
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h1 id="概述">概述</h1><p>Thrift最初由Facebook研发，主要用于各个服务之间的RPC通信，支持跨语言，常用的语言比如C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell, C#, Cocoa, JavaScript, Node.js, Smalltalk, and OCaml都支持。Thrift是一个典型的CS（客户端/服务端）结构，客户端和服务端可以使用不同的语言开发。既然客户端和服务端能使用不同的语言开发，那么一定就要有一种中间语言来关联客户端和服务端的语言，没错，这种语言就是IDL（Interface Description Language）。<br><a id="more"></a></p>
+<h1 id="Thrift_IDL">Thrift IDL</h1><p>本节介绍Thrift的接口定义语言，Thrift IDL支持的数据类型包含：</p>
+<h2 id="基本类型">基本类型</h2><p>thrift不支持无符号类型，因为很多编程语言不存在无符号类型，比如java</p>
+<ul>
+<li>byte: 有符号字节</li>
+<li>i16: 16位有符号整数</li>
+<li>i32: 32位有符号整数</li>
+<li>i64: 64位有符号整数</li>
+<li>double: 64位浮点数</li>
+<li>string: 字符串  </li>
+</ul>
+<h2 id="容器类型">容器类型</h2><p>集合中的元素可以是除了service之外的任何类型，包括exception。</p>
+<ul>
+<li>list<t>: 一系列由T类型的数据组成的有序列表，元素可以重复</t></li>
+<li>set<t>:  一系列由T类型的数据组成的无序集合，元素不可重复</t></li>
+<li>map<k, v="">: 一个字典结构，key为K类型，value为V类型，相当于Java中的HMap<k,v>  </k,v></k,></li>
+</ul>
+<h2 id="结构体(struct)">结构体(struct)</h2><p>就像C语言一样，thrift也支持struct类型，目的就是将一些数据聚合在一起，方便传输管理。struct的定       义形式如下：  </p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">struct</span> <span class="tag">People</span> &#123;</span><br><span class="line">     <span class="attribute">1</span>: string name;</span><br><span class="line">     <span class="attribute">2</span>: i32 age;</span><br><span class="line">     <span class="attribute">3</span>: string sex;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="枚举(enum)">枚举(enum)</h2><p>枚举的定义形式和Java的Enum定义差不多，例如：</p>
+<figure class="highlight capnproto"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">Sex</span> </span>&#123;</span><br><span class="line">    MALE,</span><br><span class="line">    FEMALE</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="异常(exception)">异常(exception)</h2><p>thrift支持自定义exception，规则和struct一样，如下：</p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">exception</span> <span class="tag">RequestException</span> &#123;</span><br><span class="line">    <span class="attribute">1</span>: i32 code;</span><br><span class="line">    <span class="attribute">2</span>: string reason;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="服务(service)">服务(service)</h2><p>thrift定义服务相当于Java中创建Interface一样，创建的service经过代码生成命令之后就会生成客户端和服务端的框架代码。定义形式如下：</p>
+<figure class="highlight thrift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">service</span> <span class="title">HelloWordService</span> </span>&#123;</span><br><span class="line">     <span class="comment">// service中定义的函数，相当于Java interface中定义的函数</span></span><br><span class="line">     <span class="built_in">string</span> doAction(<span class="number">1</span>: <span class="built_in">string</span> name, <span class="number">2</span>: <span class="built_in">i32</span> age);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="类型定义">类型定义</h2><p>thrift支持类似C++一样的typedef定义，比如：</p>
+<figure class="highlight thrift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="built_in">i32</span> Integer</span><br><span class="line"><span class="keyword">typedef</span> <span class="built_in">i64</span> Long</span><br></pre></td></tr></table></figure>
+<p><strong>注意，末尾没有逗号或者分号</strong></p>
+<h2 id="常量(const)">常量(const)</h2><p>thrift也支持常量定义，使用const关键字，例如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> i32 MAX_RETRIES_TIME = <span class="number">10</span></span><br><span class="line"><span class="keyword">const</span> <span class="built_in">string</span> MY_WEBSITE = <span class="string">"http://qifuguang.me"</span>;</span><br></pre></td></tr></table></figure>
+<p><strong>末尾的分号是可选的，可有可无，并且支持16进制赋值</strong></p>
+<h2 id="命名空间">命名空间</h2><p>thrift的命名空间相当于Java中的package的意思，主要目的是组织代码。thrift使用关键字namespace定义命名空间，例如：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">namespace java com<span class="class">.winwill</span><span class="class">.thrift</span></span><br></pre></td></tr></table></figure>
+<p><strong>格式是：namespace 语言名 路径， 注意末尾不能有分号。</strong></p>
+<h2 id="文件包含">文件包含</h2><p>thrift也支持文件包含，相当于C/C++中的include，Java中的import。使用关键字include定义，例 如：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">include</span> <span class="string">"global.thrift"</span></span><br></pre></td></tr></table></figure>
+<h2 id="注释">注释</h2><p>thrift注释方式支持shell风格的注释，支持C/C++风格的注释，即#和//开头的语句都单当做注释，/**/包裹的语句也是注释。</p>
+<h2 id="可选与必选">可选与必选</h2><p>thrift提供两个关键字required，optional，分别用于表示对应的字段时必填的还是可选的。例如：</p>
+<figure class="highlight thrift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">People</span> </span>&#123;</span><br><span class="line">    <span class="number">1</span>: <span class="keyword">required</span> <span class="built_in">string</span> name;</span><br><span class="line">    <span class="number">2</span>: <span class="keyword">optional</span> <span class="built_in">i32</span> age;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>表示name是必填的，age是可选的。</p>
+<h1 id="生成代码">生成代码</h1><p> 知道了怎么定义thirtf文件之后，我们需要用定义好的thrift文件生成我们需要的目标语言的源码，本文以生成java源码为例。假设现在定义了如下一个thrift文件：</p>
+ <figure class="highlight thrift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> java com.winwill.thrift</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">RequestType</span> </span>&#123;</span><br><span class="line">    SAY_HELLO,   <span class="comment">//问好</span></span><br><span class="line">    QUERY_TIME,  <span class="comment">//询问时间</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Request</span> </span>&#123;</span><br><span class="line">    <span class="number">1</span>: <span class="keyword">required</span> RequestType type;  <span class="comment">// 请求的类型，必选</span></span><br><span class="line">    <span class="number">2</span>: <span class="keyword">required</span> <span class="built_in">string</span> name;       <span class="comment">// 发起请求的人的名字，必选</span></span><br><span class="line">    <span class="number">3</span>: <span class="keyword">optional</span> <span class="built_in">i32</span> age;           <span class="comment">// 发起请求的人的年龄，可选</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">exception</span> <span class="title">RequestException</span> </span>&#123;</span><br><span class="line">    <span class="number">1</span>: <span class="keyword">required</span> <span class="built_in">i32</span> code;</span><br><span class="line">    <span class="number">2</span>: <span class="keyword">optional</span> <span class="built_in">string</span> reason;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 服务名</span></span><br><span class="line"><span class="class"><span class="keyword">service</span> <span class="title">HelloWordService</span> </span>&#123;</span><br><span class="line">    <span class="built_in">string</span> doAction(<span class="number">1</span>: Request request) throws (<span class="number">1</span>:RequestException qe); <span class="comment">// 可能抛出异常。</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 在终端运行如下命令(前提是已经安装thrift)：</p>
+ <figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">thrift --<span class="keyword">gen</span> java <span class="keyword">Test</span>.thrift</span><br></pre></td></tr></table></figure>
+<p> 则在当前目录会生成一个gen-java目录，该目录下会按照namespace定义的路径名一次一层层生成文件夹，到gen-java/com/winwill/thrift/目录下可以看到生成的4个Java类：<br> <img src="http://7xlune.com1.z0.glb.clouddn.com/images/Thrift入门教程/thrift-gen-java.png" alt="目录结构"><br> 可以看到，thrift文件中定义的enum，struct，exception，service都相应地生成了一个Java类，这就是能支持Java语言的基本的框架代码。</p>
+<h1 id="服务端实现">服务端实现</h1><p>上面代码生成这一步已经将接口代码生成了，现在需要做的是实现HelloWordService的具体逻辑，实现的方式就是创建一个Java类，implements com.winwill.thrift.HelloWordService，例如：</p>
+<figure class="highlight nimrod"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">package com.winwill.thrift;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.commons.lang3.<span class="type">StringUtils</span>;</span><br><span class="line"><span class="keyword">import</span> org.apache.thrift.<span class="type">TException</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.<span class="type">Date</span>;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * @author qifuguang</span><br><span class="line"> * @date <span class="number">15</span>/<span class="number">9</span>/<span class="number">11</span> <span class="number">15</span>:<span class="number">53</span></span><br><span class="line"> */</span><br><span class="line">public class <span class="type">HelloWordServiceImpl</span> implements com.winwill.thrift.<span class="type">HelloWordService</span>.<span class="type">Iface</span> &#123;</span><br><span class="line">    // 实现这个方法完成具体的逻辑。</span><br><span class="line">    public <span class="type">String</span> doAction(com.winwill.thrift.<span class="type">Request</span> request) throws com.winwill.thrift.<span class="type">RequestException</span>, <span class="type">TException</span> &#123;</span><br><span class="line">        <span class="type">System</span>.<span class="keyword">out</span>.println(<span class="string">"Get request: "</span> + request);</span><br><span class="line">        <span class="keyword">if</span> (<span class="type">StringUtils</span>.isBlank(request.getName()) || request.getType() == null) &#123;</span><br><span class="line">            throw new com.winwill.thrift.<span class="type">RequestException</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">String</span> <span class="literal">result</span> = <span class="string">"Hello, "</span> + request.getName();</span><br><span class="line">        <span class="keyword">if</span> (request.getType() == com.winwill.thrift.<span class="type">RequestType</span>.<span class="type">SAY_HELLO</span>) &#123;</span><br><span class="line">            <span class="literal">result</span> += <span class="string">", Welcome!"</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="literal">result</span> += <span class="string">", Now is "</span> + new <span class="type">Date</span>().toLocaleString();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">result</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="启动服务">启动服务</h1><p>上面这个就是服务端的具体实现类，现在需要启动这个服务，所以需要一个启动类，启动类的代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.winwill.thrift;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.thrift.server.TServer;</span><br><span class="line"><span class="keyword">import</span> org.apache.thrift.server.TSimpleServer;</span><br><span class="line"><span class="keyword">import</span> org.apache.thrift.transport.TServerSocket;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.net.ServerSocket;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span><br><span class="line"> * <span class="doctag">@author</span> qifuguang</span><br><span class="line"> * <span class="doctag">@date</span> 15/9/11 16:07</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWordServer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        ServerSocket socket = <span class="keyword">new</span> ServerSocket(<span class="number">7912</span>);</span><br><span class="line">        TServerSocket serverTransport = <span class="keyword">new</span> TServerSocket(socket);</span><br><span class="line">        com.winwill.thrift.HelloWordService.Processor processor = <span class="keyword">new</span> com.winwill.thrift.HelloWordService.Processor(<span class="keyword">new</span> HelloWordServiceImpl());</span><br><span class="line">        TServer server = <span class="keyword">new</span> TSimpleServer(processor, serverTransport);</span><br><span class="line">        System.out.println(<span class="string">"Running server..."</span>);</span><br><span class="line">        server.serve();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行之后看到控制台的输出为：</p>
+<blockquote>
+<p>Running server…</p>
+</blockquote>
+<h1 id="客户端请求">客户端请求</h1><p>现在服务已经启动，可以通过客户端向服务端发送请求了，客户端的代码如下：</p>
+<figure class="highlight openscad"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">package com.winwill.thrift;</span><br><span class="line"></span><br><span class="line"><span class="built_in">import</span> org.apache.thrift.protocol.TBinaryProtocol;</span><br><span class="line"><span class="built_in">import</span> org.apache.thrift.protocol.TProtocol;</span><br><span class="line"><span class="built_in">import</span> org.apache.thrift.transport.TSocket;</span><br><span class="line"><span class="built_in">import</span> org.apache.thrift.transport.TTransport;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span><br><span class="line"> * @author qifuguang</span><br><span class="line"> * @date 15/9/11 16:13</span><br><span class="line"> */</span></span><br><span class="line">public class HelloWordClient &#123;</span><br><span class="line">    public static void main<span class="params">(String[] args)</span> throws Exception &#123;</span><br><span class="line">        TTransport transport = new TSocket<span class="params">(<span class="string">"localhost"</span>, <span class="number">8888</span>)</span>;</span><br><span class="line">        TProtocol protocol = new TBinaryProtocol<span class="params">(transport)</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建client</span></span><br><span class="line">        com.winwill.thrift.HelloWordService.Client client = new com.winwill.thrift.HelloWordService.Client<span class="params">(protocol)</span>;</span><br><span class="line"></span><br><span class="line">        transport.open<span class="params">()</span>;  <span class="comment">// 建立连接</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 第一种请求类型</span></span><br><span class="line">        com.winwill.thrift.Request request = new com.winwill.thrift.Request<span class="params">()</span></span><br><span class="line">                .setType<span class="params">(com.winwill.thrift.RequestType.SAY_HELLO)</span>.setName<span class="params">(<span class="string">"winwill2012"</span>)</span>.setAge<span class="params">(<span class="number">24</span>)</span>;</span><br><span class="line">        System.out.println<span class="params">(client.doAction<span class="params">(request)</span>)</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 第二种请求类型</span></span><br><span class="line">        request.setType<span class="params">(com.winwill.thrift.RequestType.QUERY_TIME)</span>.setName<span class="params">(<span class="string">"winwill2012"</span>)</span>;</span><br><span class="line">        System.out.println<span class="params">(client.doAction<span class="params">(request)</span>)</span>;</span><br><span class="line"></span><br><span class="line">        transport.close<span class="params">()</span>;  <span class="comment">// 请求结束，断开连接</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行客户端代码，得到结果：</p>
+<blockquote>
+<p>Hello, winwill2012, Welcome!<br>Hello, winwill2012, Now is 2015-9-11 16:37:22</p>
+</blockquote>
+<p>并且此时，服务端会有请求日志：</p>
+<blockquote>
+<p>Running server…<br>Get request: Request(type:SAY_HELLO, name:winwill2012, age:24)<br>Get request: Request(type:QUERY_TIME, name:winwill2012, age:24)  </p>
+</blockquote>
+<p>可以看到，客户端成功将请求发到了服务端，服务端成功地将请求结果返回给客户端，整个通信过程完成。</p>
+<h1 id="注意事项">注意事项</h1><ul>
+<li>本文为作者个人理解，如理解有误，请留言相告，感激不尽；</li>
+<li>本文为作者原创，转载请注明出处，原文地址：<a href="http://qifuguang.me/2015/09/11/Thrift入门教程/">http://qifuguang.me/2015/09/11/Thrift入门教程/</a></li>
+</ul>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          <i class="icon-tag" style="display: inline-block;margin: 0 2px;"></i>
+          
+            <a href="/tags/thrift/" rel="tag">thrift</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/09/18/IntelliJ远程调试教程/" rel="prev">IntelliJ远程调试教程</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/" rel="next">[Java并发包学习八]深度剖析ConcurrentHashMap</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+    
+        <!-- UJian Button BEGIN -->
+        <div class="ujian-hook"></div>
+        <script type="text/javascript">var ujian_config = {picSize:84,textHeight:45};</script>
+        <script type="text/javascript" src="http://v1.ujian.cc/code/ujian.js?uid=2051639"></script>
+        <a href="http://www.ujian.cc" style="border:0;"><img src="http://img.ujian.cc/pixel.png" alt="友荐云推荐" style="border:0;padding:0;margin:0;" /></a>
+        <!-- UJian Button END -->
+    
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+
+            </div>
+
+            
+
+            
+              <div class="comments" id="comments">
+                
+                  <div class="ds-thread" data-thread-key="2015/09/11/Thrift入门教程/"
+                       data-title="Thrift入门教程" data-url="http://qifuguang.me/2015/09/11/Thrift入门教程/">
+                  </div>
+                
+              </div>
+            
+        </div>
+
+        
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="http://7xlune.com1.z0.glb.clouddn.com/images/qifuguang.png" alt="winwill2012" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">winwill2012</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">互联网技术分享。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">52</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">18</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/3497016832/profile?topnav=1&wvr=6" target="_blank" rel="external nofollow">新浪微博</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.zhihu.com/people/winwill2012" target="_blank" rel="external nofollow">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.douban.com/people/129019278/" target="_blank" rel="external nofollow">豆瓣</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://gitcafe.com/winwill2012" target="_blank" rel="external nofollow">Gitcafe</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank" rel="external nofollow">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            <p class="site-author-name">友情链接</p>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.csdn.net/winwill2012" target="_blank">我的CSDN博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.163.com/scuqifuguang@126/" target="_blank">我的网易博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://lusongsong.com/" target="_blank">卢松松博客</a>
+              </span>
+            
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Thrift_IDL"><span class="nav-number">2.</span> <span class="nav-text">Thrift IDL</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#基本类型"><span class="nav-number">2.1.</span> <span class="nav-text">基本类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#容器类型"><span class="nav-number">2.2.</span> <span class="nav-text">容器类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结构体(struct)"><span class="nav-number">2.3.</span> <span class="nav-text">结构体(struct)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#枚举(enum)"><span class="nav-number">2.4.</span> <span class="nav-text">枚举(enum)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#异常(exception)"><span class="nav-number">2.5.</span> <span class="nav-text">异常(exception)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#服务(service)"><span class="nav-number">2.6.</span> <span class="nav-text">服务(service)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#类型定义"><span class="nav-number">2.7.</span> <span class="nav-text">类型定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#常量(const)"><span class="nav-number">2.8.</span> <span class="nav-text">常量(const)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#命名空间"><span class="nav-number">2.9.</span> <span class="nav-text">命名空间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文件包含"><span class="nav-number">2.10.</span> <span class="nav-text">文件包含</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注释"><span class="nav-number">2.11.</span> <span class="nav-text">注释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可选与必选"><span class="nav-number">2.12.</span> <span class="nav-text">可选与必选</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#生成代码"><span class="nav-number">3.</span> <span class="nav-text">生成代码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#服务端实现"><span class="nav-number">4.</span> <span class="nav-text">服务端实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#启动服务"><span class="nav-number">5.</span> <span class="nav-text">启动服务</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#客户端请求"><span class="nav-number">6.</span> <span class="nav-text">客户端请求</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#注意事项"><span class="nav-number">7.</span> <span class="nav-text">注意事项</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2015</span>
+  <span class="with-love">
+    <i class="icon-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">winwill2012&nbsp;&nbsp;|&nbsp;&nbsp;winwill2012个人技术博客</span>
+</div>
+
+<div class="powered-by">
+  由Hexo强力驱动
+</div>
+
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<span><a href="http://qifuguang.me/sitemap.xml">google网站地图</a></span>
+<span><a href="http://qifuguang.me/baidusitemap.xml">&nbsp;&nbsp;|&nbsp;&nbsp;百度网站地图</a></span>
+<span id="busuanzi_container_site_pv" style='display:none'> &nbsp;&nbsp;|&nbsp;&nbsp;本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+<br>
+<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1256031805'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s11.cnzz.com/z_stat.php%3Fid%3D1256031805%26online%3D1%26show%3Dline' type='text/javascript'%3E%3C/script%3E"));</script>
+
+        </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+</div>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"winwill2012-hexo"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementById('footer')
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+     
+  	  <script type="text/javascript">
+  		var duoshuo_user_ID = winwill2012
+  	  </script>
+     
+  	<script src="/js/ua-parser.min.js"></script>
+  	<script src="/js/hook-duoshuo.js"></script>
+  
+
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.4"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.4"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.4" id="motion.global"></script>
+
+
+
+  <script type="text/javascript" src="/js/search-toggle.js"></script>
+
+
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.4" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        if (CONFIG.sidebar === 'always') {
+            displaySidebar();
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+<!-- lazyload -->
+<script type="text/javascript" src="/js/lazyload.js"></script>
+<script type="text/javascript">
+    jQuery(function () {
+        jQuery("#posts img").lazyload({
+            placeholder: "/images/loading.gif",
+            effect: "fadeIn"
+        });
+    });
+</script>
+</body>
+</html>

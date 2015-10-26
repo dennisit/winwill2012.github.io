@@ -1,0 +1,776 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+    
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.4"/>
+
+
+    <meta name="description" content="互联网技术分享。" />
+
+
+
+  <meta name="keywords" content="日志处理," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="winwill2012博客" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/it.jpg?v=0.4.4" />
+
+
+<meta name="description" content="概述slf4j的全称是Simple Loging Facade For Java，即它仅仅是一个为Java程序提供日志输出的统一接口，并不是一个具体的日志实现方案，就比如JDBC一样，只是一种规则而已。所以单独的slf4j是不能工作的，必须搭配其他具体的日志实现方案，比如apache的org.apache.log4j.Logger，jdk自带的java.util.logging.Logger等等。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[日志处理]slf4j的优势与使用原理">
+<meta property="og:url" content="http://qifuguang.me/2015/08/26/[日志处理]slf4j的优势与使用原理/index.html">
+<meta property="og:site_name" content="winwill2012博客">
+<meta property="og:description" content="概述slf4j的全称是Simple Loging Facade For Java，即它仅仅是一个为Java程序提供日志输出的统一接口，并不是一个具体的日志实现方案，就比如JDBC一样，只是一种规则而已。所以单独的slf4j是不能工作的，必须搭配其他具体的日志实现方案，比如apache的org.apache.log4j.Logger，jdk自带的java.util.logging.Logger等等。">
+<meta property="og:updated_time" content="2015-10-25T09:11:47.406Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[日志处理]slf4j的优势与使用原理">
+<meta name="twitter:description" content="概述slf4j的全称是Simple Loging Facade For Java，即它仅仅是一个为Java程序提供日志输出的统一接口，并不是一个具体的日志实现方案，就比如JDBC一样，只是一种规则而已。所以单独的slf4j是不能工作的，必须搭配其他具体的日志实现方案，比如apache的org.apache.log4j.Logger，jdk自带的java.util.logging.Logger等等。">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+    <meta name="baidu-site-verification" content="3psLs4WOzI" />
+    <meta name="google-site-verification" content="RoBjsg5UiQ-F5HGaD803AcfeRCq114IZ89Gwzwgggjw" />
+    <meta name="360-site-verification" content="52e528e03d1db531cca13941b1535780" />
+    <meta name="sogou_site_verification" content="O5Bkv6XkHY"/>
+    <meta name="msvalidate.01" content="1925D7FF445400625C2530D7521576C4" />
+    <meta name="ujianVerification" content="500a18bd7004c449ee0e618cf997de32" />
+    <link rel="shortcut icon" href="http://7xlune.com1.z0.glb.clouddn.com/images/logo.png" type="image/x-icon" />
+    <title> [日志处理]slf4j的优势与使用原理 | winwill2012博客 </title>
+</head>
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+<!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+
+
+<script>
+    var _hmt = _hmt || [];
+    (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?bb4684f9c6c7a8ce235dad0dd9307c52";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+
+
+<div class="container one-column page-post-detail">
+    <div class="headband"></div>
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+        <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-logo"></i>
+      </span>
+      <span class="site-title">winwill2012博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu menu-left">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-about"></i> <br />
+            关于&留言
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  <div class="site-search">
+    <form class="site-search-form">
+      <input type="text" id="bdcsMain" class="st-search-input st-default-search-input" />
+    </form>
+  <script type="text/javascript">
+  (function(){
+    document.write(unescape('%3Cdiv id="bdcs"%3E%3C/div%3E'));
+    var bdcs = document.createElement('script');bdcs.type = 'text/javascript';bdcs.async = true;
+    bdcs.src = 'http://znsv.baidu.com/customer_search/api/js?sid=6348728132870376258' + '&plate_url=' + encodeURIComponent(window.location.href) + '&t=' + Math.ceil(new Date()/3600000);
+    var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bdcs, s);})();
+  </script>
+  <div class="site-search-toggle"></div>
+  </div>
+</nav>
+
+
+        </div>
+    </header>
+
+    <main id="main" class="main">
+        <div class="main-inner">
+            <div id="content" class="content">
+                
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [日志处理]slf4j的优势与使用原理
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+            <i class="icon-date" style="display: inline-block;margin: 0 2px;"></i>
+            2015-08-26
+        </span>
+        
+          &nbsp;&nbsp;
+          <span class="post-category" >
+            <i class="icon-cate" style="display: inline-block;margin: 0 2px;" width="20px"></i>
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a href="/categories/日志处理/" itemprop="url" rel="index"><span itemprop="name">日志处理</span></a></span>
+
+              
+              
+
+            
+          </span>
+        
+        
+            &nbsp;&nbsp;
+            <i class="icon-views" style="display: inline-block;margin: 0 2px;"></i>
+            热度<span id="busuanzi_container_page_pv" style="display:none"><span id="busuanzi_value_page_pv"></span>℃
+            </span>
+        
+        
+          
+              &nbsp;&nbsp;
+              <i class="icon-comments" style="display: inline-block;margin: 0 2px;"></i>
+              <a href="/2015/08/26/[日志处理]slf4j的优势与使用原理/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2015/08/26/[日志处理]slf4j的优势与使用原理/" itemprop="commentsCount"></span>
+              </a>
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h1 id="概述">概述</h1><p>slf4j的全称是Simple Loging Facade For Java，即它仅仅是一个为Java程序提供日志输出的统一接口，并不是一个具体的日志实现方案，就比如JDBC一样，只是一种规则而已。所以单独的slf4j是不能工作的，必须搭配其他具体的日志实现方案，比如apache的<strong>org.apache.log4j.Logger</strong>，jdk自带的<strong>java.util.logging.Logger</strong>等等。<br><a id="more"></a></p>
+<h1 id="slf4j的优势">slf4j的优势</h1><p>知道什么是slf4j之后我们应该明白为什么要使用slf4j，为什么不适用具体的日志实现方案。笔者理解，slf4j主要有以下几点优势：</p>
+<h2 id="与客户端解耦">与客户端解耦</h2><p>想象一下下面的场景：</p>
+<blockquote>
+<p>有一个别人写的很棒的类库，里面使用的是jdk自带的java.util.logging.Logger这个日志系统，现在你有一个程序需要用到这个类库，并且你自己的程序现在是使用apache的org.apache.log4j.Logger这个日志系统。那么问题来了，如果你的程序导入了这个类库，那么是不是必须两种日志系统都要支持，那么你是不是需要多配置一些东西，多维护一些东西？耗费了太多维护成本，你想死的心都有了吧？</p>
+</blockquote>
+<p>有问题就要有解决方案，不错，解决方案就是：<strong>使用slf4j</strong>。</p>
+<p>slf4j只是一种接口，它本身并不关心你底层使用的是什么日志实现方案，所以它支持各种日志实现方案。简单的说，只要我们在类库中使用slf4j打日志，那么底层使用什么日志实现方案是使用者决定的，怎么决定？依靠配置文件和jar库。</p>
+<h2 id="省内存">省内存</h2><p>如果大家之前使用过log4j，那么一定基本都是这样用的：</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.winwill.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.log4j.Logger;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span><br><span class="line"> * <span class="doctag">@author</span> qifuguang</span><br><span class="line"> * <span class="doctag">@date</span> 15/8/26 21:54</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestLog4j</span> &#123;</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOGGER = Logger.getLogger(TestLog4j.<span class="keyword">class</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="typename">void</span> main(String[] args) &#123;</span><br><span class="line">        String message = <span class="string">"Hello World."</span>;</span><br><span class="line">        LOGGER.info(<span class="string">"This is a test message: "</span> + message);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意到log4j的info函数有两种使用方式：</p>
+<figure class="highlight delphi"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> void info(<span class="keyword">Object</span> <span class="keyword">message</span>)</span><br><span class="line"><span class="keyword">public</span> void info(<span class="keyword">Object</span> <span class="keyword">message</span>, Throwable t)</span><br></pre></td></tr></table></figure>
+<p>第一个参数是要输出的信息，假设要输出的是一个字符串，并且字符串中包含变量，则message参数就必须使用字符串相加操作，就比如上面测试代码的14行一样。姑且不说字符串相加是一个比较消耗性能的操作，字符串是一个不可变对象，一旦创建就不能被修改，创建的字符串会保存在String池中，占用内存。更糟糕的是如果配置文件中配置的日志级别是ERROR的话，这行info日志根本不会输出，则相加得到的字符串对象是一个非必须对象，白白浪费了内存空间。有人会说了，那我可以这样写啊：</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.winwill.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.log4j.Logger;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span><br><span class="line"> * <span class="doctag">@author</span> qifuguang</span><br><span class="line"> * <span class="doctag">@date</span> 15/8/26 21:54</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestLog4j</span> &#123;</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOGGER = Logger.getLogger(TestLog4j.<span class="keyword">class</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="typename">void</span> main(String[] args) &#123;</span><br><span class="line">        String message = <span class="string">"Hello World."</span>;</span><br><span class="line">        <span class="keyword">if</span> (LOGGER.isInfoEnabled()) &#123;</span><br><span class="line">            LOGGER.info(<span class="string">"This is a test message: "</span> + message);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样不就解决了白白浪费内存的问题了吗？没错，这是一个变通方案，但是这样的代码太繁琐，不直观！</p>
+<p>再来看看slf4j的打日志的方式：</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.winwill.test;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span><br><span class="line"> * <span class="doctag">@author</span> qifuguang</span><br><span class="line"> * <span class="doctag">@date</span> 15/8/26 21:54</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestLog4j</span> &#123;</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(TestLog4j.<span class="keyword">class</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="typename">void</span> main(String[] args) &#123;</span><br><span class="line">        String message = <span class="string">"Hello World."</span>;</span><br><span class="line">        LOGGER.info(<span class="string">"This is a test message: &#123;&#125;"</span>, message);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看到没有，打日志的时候使用了{}占位符，这样就不会有字符串拼接操作，减少了无用String对象的数量，节省了内存。并且，记住，在生产最终日志信息的字符串之前，这个方法会检查一个特定的日志级别是不是打开了，这不仅降低了内存消耗而且预先降低了CPU去处理字符串连接命令的时间。这里是使用SLF4J日志方法的代码，来自于slf4j-log4j12-1.6.1.jar中的Log4j的适配器类Log4jLoggerAdapter。</p>
+<figure class="highlight openscad"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">public void debug<span class="params">(String format, Object arg1, Object arg2)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> <span class="params">(logger.isDebugEnabled<span class="params">()</span>)</span> &#123;</span><br><span class="line">        FormattingTuple ft = MessageFormatter.format<span class="params">(format, arg1, arg2)</span>;</span><br><span class="line">        logger.<span class="built_in">log</span><span class="params">(FQCN, Level.DEBUG, ft.getMessage<span class="params">()</span>, ft.getThrowable<span class="params">()</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="slf4j的使用与绑定原理">slf4j的使用与绑定原理</h1><p>前面介绍了slf4j的优势，本节介绍怎么使用slf4j以及其中的原理，前文说到了，单独的slf4j是不能工作的，必须带上其他具体的日志实现方案。就以apache的log4j作为具体日志实现方案为例，如果在工程中要使用slf4j作为接口，并且要用log4j作为具体实现方案，那么我们需要做的事情如下：（下面的xxx表示具体版本号）</p>
+<ul>
+<li>将slf4j-api-xxx.jar加入工程classpath中；</li>
+<li>将slf4j-log4jxx-xxx.jar加入工程classpath中；</li>
+<li>将log4j-xxx.jar加入工程classpath中；</li>
+<li>将log4j.properties（log4j.xml）文件加入工程classpath中。</li>
+</ul>
+<p>介绍一下工作原理：</p>
+<p>首先，slf4j-api作为slf4j的接口类，使用在程序代码中，这个包提供了一个Logger类和LoggerFactory类，Logger类用来打日志，LoggerFactory类用来获取Logger；slf4j-log4j是连接slf4j和log4j的桥梁，怎么连接的呢？我们看看slf4j的LoggerFactory类的getLogger函数的源码：</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span><br><span class="line"> * Return a logger named corresponding to the class passed as parameter, using</span><br><span class="line"> * the statically bound &#123;<span class="doctag">@link</span> ILoggerFactory&#125; instance.</span><br><span class="line"> *</span><br><span class="line"> * <span class="doctag">@param</span> clazz the returned logger will be named after clazz</span><br><span class="line"> * <span class="doctag">@return</span> logger</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="function">Logger <span class="title">getLogger</span><span class="params">(Class clazz)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> getLogger(clazz.getName());</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span><br><span class="line"> * Return a logger named according to the name parameter using the statically</span><br><span class="line"> * bound &#123;<span class="doctag">@link</span> ILoggerFactory&#125; instance.</span><br><span class="line"> *</span><br><span class="line"> * <span class="doctag">@param</span> name The name of the logger.</span><br><span class="line"> * <span class="doctag">@return</span> logger</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="function">Logger <span class="title">getLogger</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">  ILoggerFactory iLoggerFactory = getILoggerFactory();</span><br><span class="line">  <span class="function"><span class="keyword">return</span> iLoggerFactory.<span class="title">getLogger</span><span class="params">(name)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="function">ILoggerFactory <span class="title">getILoggerFactory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (INITIALIZATION_STATE == UNINITIALIZED) &#123;</span><br><span class="line">    INITIALIZATION_STATE = ONGOING_INITIALIZATION;</span><br><span class="line">    performInitialization();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">switch</span> (INITIALIZATION_STATE) &#123;</span><br><span class="line">    <span class="keyword">case</span> SUCCESSFUL_INITIALIZATION:</span><br><span class="line">      <span class="keyword">return</span> StaticLoggerBinder.getSingleton().getLoggerFactory();</span><br><span class="line">    <span class="keyword">case</span> NOP_FALLBACK_INITIALIZATION:</span><br><span class="line">      <span class="keyword">return</span> NOP_FALLBACK_FACTORY;</span><br><span class="line">    <span class="keyword">case</span> FAILED_INITIALIZATION:</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(UNSUCCESSFUL_INIT_MSG);</span><br><span class="line">    <span class="keyword">case</span> ONGOING_INITIALIZATION:</span><br><span class="line">      // support re-entrant behavior.</span><br><span class="line">      // See also http://bugzilla.slf4j.org/show_bug.cgi?id=106</span><br><span class="line">      <span class="keyword">return</span> TEMP_FACTORY;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Unreachable code"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>追踪到最后，发现LoggerFactory.getLogger()首先获取一个ILoggerFactory接口，然后使用该接口获取具体的Logger。获取ILoggerFactory的时候用到了一个StaticLoggerBinder类，仔细研究我们会发现StaticLoggerBinder这个类并不是slf4j-api这个包中的类，而是slf4j-log4j包中的类，这个类就是一个中间类，它用来将抽象的slf4j变成具体的log4j，也就是说具体要使用什么样的日志实现方案，就得靠这个StaticLoggerBinder类。再看看slf4j-log4j包种的这个StaticLoggerBinder类创建ILoggerFactory长什么样子：</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ILoggerFactory loggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="title">StaticLoggerBinder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  loggerFactory = <span class="keyword">new</span> Log4jLoggerFactory();</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    Level level = Level.TRACE;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (NoSuchFieldError nsfe) &#123;</span><br><span class="line">    Util</span><br><span class="line">        .report(<span class="string">"This version of SLF4J requires log4j version 1.2.12 or later. See also http://www.slf4j.org/codes.html#log4j_version"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="function">ILoggerFactory <span class="title">getLoggerFactory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> loggerFactory;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到slf4j-log4j中的StaticLoggerBinder类创建的ILoggerFactory其实是一个<strong>org.slf4j.impl.Log4jLoggerFactory</strong>，这个类的getLogger函数是这样的：</p>
+<figure class="highlight openscad"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">public Logger getLogger<span class="params">(String name)</span> &#123;</span><br><span class="line">  Logger slf4jLogger = loggerMap.get<span class="params">(name)</span>;</span><br><span class="line">  <span class="keyword">if</span> <span class="params">(slf4jLogger != null)</span> &#123;</span><br><span class="line">    return slf4jLogger;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    org.apache.log4j.Logger log4jLogger;</span><br><span class="line">    <span class="keyword">if</span><span class="params">(name.equalsIgnoreCase<span class="params">(Logger.ROOT_LOGGER_NAME)</span>)</span></span><br><span class="line">      log4jLogger = LogManager.getRootLogger<span class="params">()</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      log4jLogger = LogManager.getLogger<span class="params">(name)</span>;</span><br><span class="line"></span><br><span class="line">    Logger newInstance = new Log4jLoggerAdapter<span class="params">(log4jLogger)</span>;</span><br><span class="line">    Logger oldInstance = loggerMap.putIfAbsent<span class="params">(name, newInstance)</span>;</span><br><span class="line">    return oldInstance == null ? newInstance : oldInstance;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>就在其中创建了真正的<strong>org.apache.log4j.Logger</strong>，也就是我们需要的具体的日志实现方案的Logger类。就这样，整个绑定过程就完成了，没晕吧？log4j.properties(log4j.xml)的具体配置下一篇文章会详细介绍。</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          <i class="icon-tag" style="display: inline-block;margin: 0 2px;"></i>
+          
+            <a href="/tags/日志处理/" rel="tag">日志处理</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/08/31/[日志处理]log4j配置详解/" rel="prev">[日志处理]log4j配置详解</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/08/26/[Java并发包学习六]Semaphore介绍/" rel="next">[Java并发包学习六]Semaphore介绍</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+    
+        <!-- UJian Button BEGIN -->
+        <div class="ujian-hook"></div>
+        <script type="text/javascript">var ujian_config = {picSize:84,textHeight:45};</script>
+        <script type="text/javascript" src="http://v1.ujian.cc/code/ujian.js?uid=2051639"></script>
+        <a href="http://www.ujian.cc" style="border:0;"><img src="http://img.ujian.cc/pixel.png" alt="友荐云推荐" style="border:0;padding:0;margin:0;" /></a>
+        <!-- UJian Button END -->
+    
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+
+            </div>
+
+            
+
+            
+              <div class="comments" id="comments">
+                
+                  <div class="ds-thread" data-thread-key="2015/08/26/[日志处理]slf4j的优势与使用原理/"
+                       data-title="[日志处理]slf4j的优势与使用原理" data-url="http://qifuguang.me/2015/08/26/[日志处理]slf4j的优势与使用原理/">
+                  </div>
+                
+              </div>
+            
+        </div>
+
+        
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="http://7xlune.com1.z0.glb.clouddn.com/images/qifuguang.png" alt="winwill2012" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">winwill2012</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">互联网技术分享。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">52</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">18</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/3497016832/profile?topnav=1&wvr=6" target="_blank" rel="external nofollow">新浪微博</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.zhihu.com/people/winwill2012" target="_blank" rel="external nofollow">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.douban.com/people/129019278/" target="_blank" rel="external nofollow">豆瓣</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://gitcafe.com/winwill2012" target="_blank" rel="external nofollow">Gitcafe</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank" rel="external nofollow">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            <p class="site-author-name">友情链接</p>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.csdn.net/winwill2012" target="_blank">我的CSDN博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.163.com/scuqifuguang@126/" target="_blank">我的网易博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://lusongsong.com/" target="_blank">卢松松博客</a>
+              </span>
+            
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#slf4j的优势"><span class="nav-number">2.</span> <span class="nav-text">slf4j的优势</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#与客户端解耦"><span class="nav-number">2.1.</span> <span class="nav-text">与客户端解耦</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#省内存"><span class="nav-number">2.2.</span> <span class="nav-text">省内存</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#slf4j的使用与绑定原理"><span class="nav-number">3.</span> <span class="nav-text">slf4j的使用与绑定原理</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2015</span>
+  <span class="with-love">
+    <i class="icon-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">winwill2012&nbsp;&nbsp;|&nbsp;&nbsp;winwill2012个人技术博客</span>
+</div>
+
+<div class="powered-by">
+  由Hexo强力驱动
+</div>
+
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<span><a href="http://qifuguang.me/sitemap.xml">google网站地图</a></span>
+<span><a href="http://qifuguang.me/baidusitemap.xml">&nbsp;&nbsp;|&nbsp;&nbsp;百度网站地图</a></span>
+<span id="busuanzi_container_site_pv" style='display:none'> &nbsp;&nbsp;|&nbsp;&nbsp;本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+<br>
+<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1256031805'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s11.cnzz.com/z_stat.php%3Fid%3D1256031805%26online%3D1%26show%3Dline' type='text/javascript'%3E%3C/script%3E"));</script>
+
+        </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+</div>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"winwill2012-hexo"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementById('footer')
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+     
+  	  <script type="text/javascript">
+  		var duoshuo_user_ID = winwill2012
+  	  </script>
+     
+  	<script src="/js/ua-parser.min.js"></script>
+  	<script src="/js/hook-duoshuo.js"></script>
+  
+
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.4"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.4"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.4" id="motion.global"></script>
+
+
+
+  <script type="text/javascript" src="/js/search-toggle.js"></script>
+
+
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.4" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        if (CONFIG.sidebar === 'always') {
+            displaySidebar();
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+<!-- lazyload -->
+<script type="text/javascript" src="/js/lazyload.js"></script>
+<script type="text/javascript">
+    jQuery(function () {
+        jQuery("#posts img").lazyload({
+            placeholder: "/images/loading.gif",
+            effect: "fadeIn"
+        });
+    });
+</script>
+</body>
+</html>

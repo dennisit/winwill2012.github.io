@@ -1,0 +1,832 @@
+<!doctype html>
+<html class="theme-next use-motion theme-next-mist">
+<head>
+    
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.4"/>
+
+
+    <meta name="description" content="互联网技术分享。" />
+
+
+
+  <meta name="keywords" content="Java并发包学习," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="winwill2012博客" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/it.jpg?v=0.4.4" />
+
+
+<meta name="description" content="概述还记得大学快毕业的时候要准备找工作了，然后就看各种面试相关的书籍，还记得很多面试书中都说到：
+
+HashMap是非线程安全的，HashTable是线程安全的。
+
+那个时候没怎么写Java代码，所以根本就没有听说过ConcurrentHashMap，只知道面试的时候就记住这句话就行了…至于为什么是线程安全的，内部怎么实现的，通通不了解。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[Java并发包学习八]深度剖析ConcurrentHashMap">
+<meta property="og:url" content="http://qifuguang.me/2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/index.html">
+<meta property="og:site_name" content="winwill2012博客">
+<meta property="og:description" content="概述还记得大学快毕业的时候要准备找工作了，然后就看各种面试相关的书籍，还记得很多面试书中都说到：
+
+HashMap是非线程安全的，HashTable是线程安全的。
+
+那个时候没怎么写Java代码，所以根本就没有听说过ConcurrentHashMap，只知道面试的时候就记住这句话就行了…至于为什么是线程安全的，内部怎么实现的，通通不了解。">
+<meta property="og:image" content="http://7xlune.com1.z0.glb.clouddn.com/images/深入剖析ConcurrentHashMap/ConcurrentHashMap.png">
+<meta property="og:updated_time" content="2015-10-25T09:11:47.406Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[Java并发包学习八]深度剖析ConcurrentHashMap">
+<meta name="twitter:description" content="概述还记得大学快毕业的时候要准备找工作了，然后就看各种面试相关的书籍，还记得很多面试书中都说到：
+
+HashMap是非线程安全的，HashTable是线程安全的。
+
+那个时候没怎么写Java代码，所以根本就没有听说过ConcurrentHashMap，只知道面试的时候就记住这句话就行了…至于为什么是线程安全的，内部怎么实现的，通通不了解。">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: 'hide'
+  };
+</script>
+
+    <meta name="baidu-site-verification" content="3psLs4WOzI" />
+    <meta name="google-site-verification" content="RoBjsg5UiQ-F5HGaD803AcfeRCq114IZ89Gwzwgggjw" />
+    <meta name="360-site-verification" content="52e528e03d1db531cca13941b1535780" />
+    <meta name="sogou_site_verification" content="O5Bkv6XkHY"/>
+    <meta name="msvalidate.01" content="1925D7FF445400625C2530D7521576C4" />
+    <meta name="ujianVerification" content="500a18bd7004c449ee0e618cf997de32" />
+    <link rel="shortcut icon" href="http://7xlune.com1.z0.glb.clouddn.com/images/logo.png" type="image/x-icon" />
+    <title> [Java并发包学习八]深度剖析ConcurrentHashMap | winwill2012博客 </title>
+</head>
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+<!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+
+
+<script>
+    var _hmt = _hmt || [];
+    (function() {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?bb4684f9c6c7a8ce235dad0dd9307c52";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+
+
+<div class="container one-column page-post-detail">
+    <div class="headband"></div>
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+        <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-logo"></i>
+      </span>
+      <span class="site-title">winwill2012博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu menu-left">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-about"></i> <br />
+            关于&留言
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  <div class="site-search">
+    <form class="site-search-form">
+      <input type="text" id="bdcsMain" class="st-search-input st-default-search-input" />
+    </form>
+  <script type="text/javascript">
+  (function(){
+    document.write(unescape('%3Cdiv id="bdcs"%3E%3C/div%3E'));
+    var bdcs = document.createElement('script');bdcs.type = 'text/javascript';bdcs.async = true;
+    bdcs.src = 'http://znsv.baidu.com/customer_search/api/js?sid=6348728132870376258' + '&plate_url=' + encodeURIComponent(window.location.href) + '&t=' + Math.ceil(new Date()/3600000);
+    var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bdcs, s);})();
+  </script>
+  <div class="site-search-toggle"></div>
+  </div>
+</nav>
+
+
+        </div>
+    </header>
+
+    <main id="main" class="main">
+        <div class="main-inner">
+            <div id="content" class="content">
+                
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [Java并发包学习八]深度剖析ConcurrentHashMap
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+            <i class="icon-date" style="display: inline-block;margin: 0 2px;"></i>
+            2015-09-10
+        </span>
+        
+          &nbsp;&nbsp;
+          <span class="post-category" >
+            <i class="icon-cate" style="display: inline-block;margin: 0 2px;" width="20px"></i>
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a href="/categories/Java并发包学习/" itemprop="url" rel="index"><span itemprop="name">Java并发包学习</span></a></span>
+
+              
+              
+
+            
+          </span>
+        
+        
+            &nbsp;&nbsp;
+            <i class="icon-views" style="display: inline-block;margin: 0 2px;"></i>
+            热度<span id="busuanzi_container_page_pv" style="display:none"><span id="busuanzi_value_page_pv"></span>℃
+            </span>
+        
+        
+          
+              &nbsp;&nbsp;
+              <i class="icon-comments" style="display: inline-block;margin: 0 2px;"></i>
+              <a href="/2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/" itemprop="commentsCount"></span>
+              </a>
+          
+        
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h1 id="概述">概述</h1><p>还记得大学快毕业的时候要准备找工作了，然后就看各种面试相关的书籍，还记得很多面试书中都说到：</p>
+<blockquote>
+<p>HashMap是非线程安全的，HashTable是线程安全的。</p>
+</blockquote>
+<p>那个时候没怎么写Java代码，所以根本就没有听说过ConcurrentHashMap，只知道面试的时候就记住这句话就行了…至于为什么是线程安全的，内部怎么实现的，通通不了解。<br><a id="more"></a><br>今天我们将深入剖析一个比HashTable性能更优的线程安全的Map类，它就是ConcurrentHashMap，<strong>本文基于Java 7的源码做剖析</strong>。</p>
+<h1 id="ConcurrentHashMap的目的">ConcurrentHashMap的目的</h1><p>多线程环境下，使用Hashmap进行put操作会引起死循环，导致CPU利用率接近100%，所以在并发情况下不能使用HashMap。虽然已经有一个线程安全的HashTable，但是HashTable容器使用synchronized（他的get和put方法的实现代码如下）来保证线程安全，在线程竞争激烈的情况下HashTable的效率非常低下。因为当一个线程访问HashTable的同步方法时，访问其他同步方法的线程就可能会进入阻塞或者轮训状态。如线程1使用put进行添加元素，线程2不但不能使用put方法添加元素，并且也不能使用get方法来获取元素，所以竞争越激烈效率越低。</p>
+<figure class="highlight processing"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">synchronized</span> V <span class="built_in">get</span>(<span class="keyword">Object</span> <span class="variable">key</span>) &#123;</span><br><span class="line">    Entry&lt;?,?&gt; tab[] = table;</span><br><span class="line">    <span class="built_in">int</span> hash = <span class="variable">key</span>.hashCode();</span><br><span class="line">    <span class="built_in">int</span> index = (hash &amp; <span class="number">0x7FFFFFFF</span>) % tab.length;</span><br><span class="line">    <span class="keyword">for</span> (Entry&lt;?,?&gt; e = tab[index] ; e != <span class="keyword">null</span> ; e = e.next) &#123;</span><br><span class="line">        <span class="keyword">if</span> ((e.hash == hash) &amp;&amp; e.<span class="variable">key</span>.equals(<span class="variable">key</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> (V)e.value;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">synchronized</span> V put(K <span class="variable">key</span>, V value) &#123;</span><br><span class="line">    <span class="comment">// Make sure the value is not null</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Makes sure the key is not already in the hashtable.</span></span><br><span class="line">    Entry&lt;?,?&gt; tab[] = table;</span><br><span class="line">    <span class="built_in">int</span> hash = <span class="variable">key</span>.hashCode();</span><br><span class="line">    <span class="built_in">int</span> index = (hash &amp; <span class="number">0x7FFFFFFF</span>) % tab.length;</span><br><span class="line">    @SuppressWarnings(<span class="string">"unchecked"</span>)</span><br><span class="line">    Entry&lt;K,V&gt; entry = (Entry&lt;K,V&gt;)tab[index];</span><br><span class="line">    <span class="keyword">for</span>(; entry != <span class="keyword">null</span> ; entry = entry.next) &#123;</span><br><span class="line">        <span class="keyword">if</span> ((entry.hash == hash) &amp;&amp; entry.<span class="variable">key</span>.equals(<span class="variable">key</span>)) &#123;</span><br><span class="line">            V old = entry.value;</span><br><span class="line">            entry.value = value;</span><br><span class="line">            <span class="keyword">return</span> old;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    addEntry(hash, <span class="variable">key</span>, value, index);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这么恶劣的环境下，ConcurrentHashMap应运而生。</p>
+<h1 id="实现原理">实现原理</h1><p>ConcurrentHashMap使用分段锁技术，将数据分成一段一段的存储，然后给每一段数据配一把锁，当一个线程占用锁访问其中一个段数据的时候，其他段的数据也能被其他线程访问，能够实现真正的并发访问。如下图是ConcurrentHashMap的内部结构图：<br><img src="http://7xlune.com1.z0.glb.clouddn.com/images/深入剖析ConcurrentHashMap/ConcurrentHashMap.png" alt=""><br>从图中可以看到，ConcurrentHashMap内部分为很多个Segment，每一个Segment拥有一把锁，然后每个Segment（继承ReentrantLock）下面包含很多个HashEntry列表数组。对于一个key，需要经过三次（为什么要hash三次下文会详细讲解）hash操作，才能最终定位这个元素的位置，这三次hash分别为：</p>
+<ol>
+<li>对于一个key，先进行一次hash操作，得到hash值h1，也即h1 = hash1(key)；</li>
+<li>将得到的h1的高几位进行第二次hash，得到hash值h2，也即h2 = hash2(h1高几位)，通过h2能够确定该元素的放在哪个Segment；</li>
+<li>将得到的h1进行第三次hash，得到hash值h3，也即h3 = hash3(h1)，通过h3能够确定该元素放置在哪个HashEntry。</li>
+</ol>
+<h2 id="初始化">初始化</h2><p>先看看ConcurrentHashMap的初始化做了哪些事情，构造函数的源码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ConcurrentHashMap</span><span class="params">(<span class="keyword">int</span> initialCapacity,</span><br><span class="line">                             <span class="keyword">float</span> loadFactor, <span class="keyword">int</span> concurrencyLevel)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!(loadFactor &gt; <span class="number">0</span>) || initialCapacity &lt; <span class="number">0</span> || concurrencyLevel &lt;= <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">        <span class="keyword">if</span> (concurrencyLevel &gt; MAX_SEGMENTS)</span><br><span class="line">            concurrencyLevel = MAX_SEGMENTS;</span><br><span class="line">        <span class="comment">// Find power-of-two sizes best matching arguments</span></span><br><span class="line">        <span class="keyword">int</span> sshift = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> ssize = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> (ssize &lt; concurrencyLevel) &#123;</span><br><span class="line">            ++sshift;</span><br><span class="line">            ssize &lt;&lt;= <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.segmentShift = <span class="number">32</span> - sshift;</span><br><span class="line">        <span class="keyword">this</span>.segmentMask = ssize - <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> (initialCapacity &gt; MAXIMUM_CAPACITY)</span><br><span class="line">            initialCapacity = MAXIMUM_CAPACITY;</span><br><span class="line">        <span class="keyword">int</span> c = initialCapacity / ssize;</span><br><span class="line">        <span class="keyword">if</span> (c * ssize &lt; initialCapacity)</span><br><span class="line">            ++c;</span><br><span class="line">        <span class="keyword">int</span> cap = MIN_SEGMENT_TABLE_CAPACITY;</span><br><span class="line">        <span class="keyword">while</span> (cap &lt; c)</span><br><span class="line">            cap &lt;&lt;= <span class="number">1</span>;</span><br><span class="line">        <span class="comment">// create segments and segments[0]</span></span><br><span class="line">        Segment&lt;K,V&gt; s0 =</span><br><span class="line">            <span class="keyword">new</span> Segment&lt;K,V&gt;(loadFactor, (<span class="keyword">int</span>)(cap * loadFactor),</span><br><span class="line">                             (HashEntry&lt;K,V&gt;[])<span class="keyword">new</span> HashEntry[cap]);</span><br><span class="line">        Segment&lt;K,V&gt;[] ss = (Segment&lt;K,V&gt;[])<span class="keyword">new</span> Segment[ssize];</span><br><span class="line">        UNSAFE.putOrderedObject(ss, SBASE, s0); <span class="comment">// ordered write of segments[0]</span></span><br><span class="line">        <span class="keyword">this</span>.segments = ss;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>传入的参数有initialCapacity，loadFactor，concurrencyLevel这三个。</p>
+<ul>
+<li>initialCapacity表示新创建的这个ConcurrentHashMap的初始容量，也就是上面的结构图中的Entry数量。默认值为<code>static final int DEFAULT_INITIAL_CAPACITY = 16;</code></li>
+<li>loadFactor表示负载因子，就是当ConcurrentHashMap中的元素个数大于<strong>loadFactor * 最大容量</strong>时就需要rehash，扩容。默认值为<code>static final float DEFAULT_LOAD_FACTOR = 0.75f;</code></li>
+<li>concurrencyLevel表示并发级别，这个值用来确定Segment的个数，Segment的个数是大于等于concurrencyLevel的第一个2的n次方的数。比如，如果concurrencyLevel为12，13，14，15，16这些数，则Segment的数目为16(2的4次方)。默认值为<code>static final int DEFAULT_CONCURRENCY_LEVEL = 16;</code>。理想情况下ConcurrentHashMap的真正的并发访问量能够达到concurrencyLevel，因为有concurrencyLevel个Segment，假如有concurrencyLevel个线程需要访问Map，并且需要访问的数据都恰好分别落在不同的Segment中，则这些线程能够无竞争地自由访问（因为他们不需要竞争同一把锁），达到同时访问的效果。这也是为什么这个参数起名为“并发级别”的原因。</li>
+</ul>
+<p>初始化的一些动作：</p>
+<ol>
+<li>验证参数的合法性，如果不合法，直接抛出异常。</li>
+<li>concurrencyLevel也就是Segment的个数不能超过规定的最大Segment的个数，默认值为<code>static final int MAX_SEGMENTS = 1 &lt;&lt; 16;</code>，如果超过这个值，设置为这个值。</li>
+<li>然后使用循环找到大于等于concurrencyLevel的第一个2的n次方的数ssize，这个数就是Segment数组的大小，并记录一共向左按位移动的次数sshift，并令<code>segmentShift = 32 - sshift</code>，并且segmentMask的值等于ssize - 1，segmentMask的各个二进制位都为1，目的是之后可以通过key的hash值与这个值做<strong>&amp;运算</strong>确定Segment的索引。</li>
+<li>检查给的容量值是否大于允许的最大容量值，如果大于该值，设置为该值。最大容量值为<code>static final int MAXIMUM_CAPACITY = 1 &lt;&lt; 30;</code>。</li>
+<li>然后计算每个Segment平均应该放置多少个元素，这个值c是向上取整的值。比如初始容量为15，Segment个数为4，则每个Segment平均需要放置4个元素。</li>
+<li>最后创建一个Segment实例，将其当做Segment数组的第一个元素。</li>
+</ol>
+<h2 id="put操作">put操作</h2><p>put操作的源码如下：</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">put</span>(<span class="params">K key, V <span class="keyword">value</span></span>) </span>&#123;</span><br><span class="line">      Segment&lt;K,V&gt; s;</span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">value</span> == <span class="keyword">null</span>)</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">      <span class="keyword">int</span> hash = hash(key);</span><br><span class="line">      <span class="keyword">int</span> j = (hash &gt;&gt;&gt; segmentShift) &amp; segmentMask;</span><br><span class="line">      <span class="keyword">if</span> ((s = (Segment&lt;K,V&gt;)UNSAFE.getObject          <span class="comment">// nonvolatile; recheck</span></span><br><span class="line">           (segments, (j &lt;&lt; SSHIFT) + SBASE)) == <span class="keyword">null</span>) <span class="comment">//  in ensureSegment</span></span><br><span class="line">          s = ensureSegment(j);</span><br><span class="line">      <span class="keyword">return</span> s.put(key, hash, <span class="keyword">value</span>, <span class="keyword">false</span>);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>操作步骤如下：</p>
+<ol>
+<li>判断value是否为null，如果为null，直接抛出异常。</li>
+<li>key通过一次hash运算得到一个hash值。(这个hash运算下文详说)</li>
+<li>将得到hash值向右按位移动segmentShift位，然后再与segmentMask做&amp;运算得到segment的索引j。<br>在初始化的时候我们说过segmentShift的值等于32-sshift，例如concurrencyLevel等于16，则sshift等于4，则segmentShift为28。hash值是一个32位的整数，将其向右移动28位就变成这个样子：<br>0000 0000 0000 0000 0000 0000 0000 xxxx，然后再用这个值与segmentMask做&amp;运算，也就是取最后四位的值。这个值确定Segment的索引。</li>
+<li>使用Unsafe的方式从Segment数组中获取该索引对应的Segment对象。</li>
+<li>向这个Segment对象中put值，这个put操作也基本是一样的步骤（通过&amp;运算获取HashEntry的索引，然后set）。</li>
+</ol>
+<h2 id="get操作">get操作</h2><p>get操作的源码如下：</p>
+<figure class="highlight openscad"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">public V get<span class="params">(Object key)</span> &#123;</span><br><span class="line">        Segment&lt;K,V&gt; s; <span class="comment">// manually integrate access methods to reduce overhead</span></span><br><span class="line">        HashEntry&lt;K,V&gt;[] tab;</span><br><span class="line">        int h = hash<span class="params">(key)</span>;</span><br><span class="line">        long u = <span class="params">(<span class="params">(<span class="params">(h &gt;&gt;&gt; segmentShift)</span> &amp; segmentMask)</span> &lt;&lt; SSHIFT)</span> + SBASE;</span><br><span class="line">        <span class="keyword">if</span> <span class="params">(<span class="params">(s = <span class="params">(Segment&lt;K,V&gt;)</span>UNSAFE.getObjectVolatile<span class="params">(segments, u)</span>)</span> != null &amp;&amp;</span><br><span class="line">            <span class="params">(tab = s.table)</span> != null)</span> &#123;</span><br><span class="line">            <span class="keyword">for</span> <span class="params">(HashEntry&lt;K,V&gt; e = <span class="params">(HashEntry&lt;K,V&gt;)</span> UNSAFE.getObjectVolatile</span><br><span class="line">                     <span class="params">(tab, <span class="params">(<span class="params">(long)</span><span class="params">(<span class="params">(<span class="params">(tab.length - <span class="number">1</span>)</span> &amp; h)</span>)</span> &lt;&lt; TSHIFT)</span> + TBASE)</span>;</span><br><span class="line">                 e != null; e = e.next)</span> &#123;</span><br><span class="line">                K k;</span><br><span class="line">                <span class="keyword">if</span> <span class="params">(<span class="params">(k = e.key)</span> == key || <span class="params">(e.hash == h &amp;&amp; key.equals<span class="params">(k)</span>)</span>)</span></span><br><span class="line">                    return e.value;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>操作步骤为：</p>
+<ol>
+<li>和put操作一样，先通过key进行两次hash确定应该去哪个Segment中取数据。</li>
+<li>使用Unsafe获取对应的Segment，然后再进行一次&amp;运算得到HashEntry链表的位置，然后从链表头开始遍历整个链表（因为Hash可能会有碰撞，所以用一个链表保存），如果找到对应的key，则返回对应的value值，如果链表遍历完都没有找到对应的key，则说明Map中不包含该key，返回null。</li>
+</ol>
+<h2 id="size操作">size操作</h2><p>size操作与put和get操作最大的区别在于，size操作需要遍历所有的Segment才能算出整个Map的大小，而put和get都只关心一个Segment。假设我们当前遍历的Segment为SA，那么在遍历SA过程中其他的Segment比如SB可能会被修改，于是这一次运算出来的size值可能并不是Map当前的真正大小。所以一个比较简单的办法就是计算Map大小的时候所有的Segment都Lock住，不能更新(包含put，remove等等)数据，计算完之后再Unlock。这是普通人能够想到的方案，但是牛逼的作者还有一个更好的Idea：<strong>先给3次机会，不lock所有的Segment，遍历所有Segment，累加各个Segment的大小得到整个Map的大小，如果某相邻的两次计算获取的所有Segment的更新的次数（每个Segment都有一个modCount变量，这个变量在Segment中的Entry被修改时会加一，通过这个值可以得到每个Segment的更新操作的次数）是一样的，说明计算过程中没有更新操作，则直接返回这个值。如果这三次不加锁的计算过程中Map的更新次数有变化，则之后的计算先对所有的Segment加锁，再遍历所有Segment计算Map大小，最后再解锁所有Segment。</strong>源代码如下：</p>
+<figure class="highlight axapta"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">int</span> size() &#123;</span><br><span class="line">        <span class="comment">// Try a few times to get accurate count. On failure due to</span></span><br><span class="line">        <span class="comment">// continuous async changes in table, resort to locking.</span></span><br><span class="line">        <span class="keyword">final</span> Segment&lt;K,V&gt;[] segments = <span class="keyword">this</span>.segments;</span><br><span class="line">        <span class="keyword">int</span> size;</span><br><span class="line">        <span class="keyword">boolean</span> overflow; <span class="comment">// true if size overflows 32 bits</span></span><br><span class="line">        <span class="keyword">long</span> <span class="keyword">sum</span>;         <span class="comment">// sum of modCounts</span></span><br><span class="line">        <span class="keyword">long</span> last = <span class="number">0</span>L;   <span class="comment">// previous sum</span></span><br><span class="line">        <span class="keyword">int</span> retries = -<span class="number">1</span>; <span class="comment">// first iteration isn't retry</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                <span class="keyword">if</span> (retries++ == RETRIES_BEFORE_LOCK) &#123;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; segments.length; ++j)</span><br><span class="line">                        ensureSegment(j).lock(); <span class="comment">// force creation</span></span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">sum</span> = <span class="number">0</span>L;</span><br><span class="line">                size = <span class="number">0</span>;</span><br><span class="line">                overflow = <span class="keyword">false</span>;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; segments.length; ++j) &#123;</span><br><span class="line">                    Segment&lt;K,V&gt; seg = segmentAt(segments, j);</span><br><span class="line">                    <span class="keyword">if</span> (seg != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="keyword">sum</span> += seg.modCount;</span><br><span class="line">                        <span class="keyword">int</span> c = seg.<span class="keyword">count</span>;</span><br><span class="line">                        <span class="keyword">if</span> (c &lt; <span class="number">0</span> || (size += c) &lt; <span class="number">0</span>)</span><br><span class="line">                            overflow = <span class="keyword">true</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">sum</span> == last)</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                last = <span class="keyword">sum</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (retries &gt; RETRIES_BEFORE_LOCK) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; segments.length; ++j)</span><br><span class="line">                    segmentAt(segments, j).unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> overflow ? Integer.MAX_VALUE : size;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>举个例子：</p>
+<blockquote>
+<p>一个Map有4个Segment，标记为S1，S2，S3，S4，现在我们要获取Map的size。计算过程是这样的：第一次计算，不对S1，S2，S3，S4加锁，遍历所有的Segment，假设每个Segment的大小分别为1，2，3，4，更新操作次数分别为：2，2，3，1，则这次计算可以得到Map的总大小为1+2+3+4=10，总共更新操作次数为2+2+3+1=8；第二次计算，不对S1,S2,S3,S4加锁，遍历所有Segment，假设这次每个Segment的大小变成了2，2，3，4，更新次数分别为3，2，3，1，因为两次计算得到的Map更新次数不一致(第一次是8，第二次是9)则可以断定这段时间Map数据被更新，则此时应该再试一次；第三次计算，不对S1，S2，S3，S4加锁，遍历所有Segment，假设每个Segment的更新操作次数还是为3，2，3，1，则因为第二次计算和第三次计算得到的Map的更新操作的次数是一致的，就能说明第二次计算和第三次计算这段时间内Map数据没有被更新，此时可以直接返回第三次计算得到的Map的大小。最坏的情况：第三次计算得到的数据更新次数和第二次也不一样，则只能先对所有Segment加锁再计算最后解锁。</p>
+</blockquote>
+<h2 id="containsValue操作">containsValue操作</h2><p>containsValue操作采用了和size操作一样的想法:</p>
+<figure class="highlight axapta"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">boolean</span> containsValue(Object value) &#123;</span><br><span class="line">        <span class="comment">// Same idea as size()</span></span><br><span class="line">        <span class="keyword">if</span> (value == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">        <span class="keyword">final</span> Segment&lt;K,V&gt;[] segments = <span class="keyword">this</span>.segments;</span><br><span class="line">        <span class="keyword">boolean</span> found = <span class="keyword">false</span>;</span><br><span class="line">        <span class="keyword">long</span> last = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> retries = -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            outer: <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                <span class="keyword">if</span> (retries++ == RETRIES_BEFORE_LOCK) &#123;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; segments.length; ++j)</span><br><span class="line">                        ensureSegment(j).lock(); <span class="comment">// force creation</span></span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">long</span> hashSum = <span class="number">0</span>L;</span><br><span class="line">                <span class="keyword">int</span> <span class="keyword">sum</span> = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; segments.length; ++j) &#123;</span><br><span class="line">                    HashEntry&lt;K,V&gt;[] tab;</span><br><span class="line">                    Segment&lt;K,V&gt; seg = segmentAt(segments, j);</span><br><span class="line">                    <span class="keyword">if</span> (seg != <span class="keyword">null</span> &amp;&amp; (tab = seg.table) != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span> ; i &lt; tab.length; i++) &#123;</span><br><span class="line">                            HashEntry&lt;K,V&gt; e;</span><br><span class="line">                            <span class="keyword">for</span> (e = entryAt(tab, i); e != <span class="keyword">null</span>; e = e.next) &#123;</span><br><span class="line">                                V v = e.value;</span><br><span class="line">                                <span class="keyword">if</span> (v != <span class="keyword">null</span> &amp;&amp; value.equals(v)) &#123;</span><br><span class="line">                                    found = <span class="keyword">true</span>;</span><br><span class="line">                                    <span class="keyword">break</span> outer;</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">sum</span> += seg.modCount;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> (retries &gt; <span class="number">0</span> &amp;&amp; <span class="keyword">sum</span> == last)</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                last = <span class="keyword">sum</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (retries &gt; RETRIES_BEFORE_LOCK) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; segments.length; ++j)</span><br><span class="line">                    segmentAt(segments, j).unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> found;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="关于hash">关于hash</h1><p>大家一定还记得使用一个key定位Segment之前进行过一次hash操作吧？这次hash的作用是什么呢？看看hash的源代码：</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">private int hash(Object k) &#123;</span><br><span class="line">        int <span class="keyword">h</span> = hashSeed;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ((0 != <span class="keyword">h</span>) &amp;&amp; (k instanceof String)) &#123;</span><br><span class="line">            <span class="keyword">return</span> sun.misc.Hashing.stringHash32((String) k);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">h</span> ^= k.hashCode();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Spread bits to regularize both segment and index locations,</span></span><br><span class="line">        <span class="comment">// using variant of single-word Wang/Jenkins hash.</span></span><br><span class="line">        <span class="keyword">h</span> += (<span class="keyword">h</span> &lt;&lt;  15) ^ 0xffffcd7d;</span><br><span class="line">        <span class="keyword">h</span> ^= (<span class="keyword">h</span> &gt;&gt;&gt; 10);</span><br><span class="line">        <span class="keyword">h</span> += (<span class="keyword">h</span> &lt;&lt;   3);</span><br><span class="line">        <span class="keyword">h</span> ^= (<span class="keyword">h</span> &gt;&gt;&gt;  6);</span><br><span class="line">        <span class="keyword">h</span> += (<span class="keyword">h</span> &lt;&lt;   2) + (<span class="keyword">h</span> &lt;&lt; 14);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">h</span> ^ (<span class="keyword">h</span> &gt;&gt;&gt; 16);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>源码中的注释是这样的：</p>
+<blockquote>
+<p>Applies a supplemental hash function to a given hashCode, which defends against poor quality hash functions.  This is critical because ConcurrentHashMap uses power-of-two length hash tables, that otherwise encounter collisions for hashCodes that do not differ in lower or upper bits.</p>
+</blockquote>
+<p>这里用到了Wang/Jenkins hash算法的变种，主要的目的是为了减少哈希冲突，使元素能够均匀的分布在不同的Segment上，从而提高容器的存取效率。假如哈希的质量差到极点，那么所有的元素都在一个Segment中，不仅存取元素缓慢，分段锁也会失去意义。</p>
+<p>举个简单的例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(Integer.parseInt(<span class="string">"0001111"</span>, <span class="number">2</span>) &amp; <span class="number">15</span>);</span><br><span class="line">System.out.println(Integer.parseInt(<span class="string">"0011111"</span>, <span class="number">2</span>) &amp; <span class="number">15</span>);</span><br><span class="line">System.out.println(Integer.parseInt(<span class="string">"0111111"</span>, <span class="number">2</span>) &amp; <span class="number">15</span>);</span><br><span class="line">System.out.println(Integer.parseInt(<span class="string">"1111111"</span>, <span class="number">2</span>) &amp; <span class="number">15</span>);</span><br></pre></td></tr></table></figure>
+<p>这些数字得到的hash值都是一样的，全是15，所以如果不进行第一次预hash，发生冲突的几率还是很大的，但是如果我们先把上例中的二进制数字使用hash()函数先进行一次预hash，得到的结果是这样的：</p>
+<blockquote>
+<p>0100｜0111｜0110｜0111｜1101｜1010｜0100｜1110<br>1111｜0111｜0100｜0011｜0000｜0001｜1011｜1000<br>0111｜0111｜0110｜1001｜0100｜0110｜0011｜1110<br>1000｜0011｜0000｜0000｜1100｜1000｜0001｜1010  </p>
+</blockquote>
+<p>上面这个例子引用自: <a href="http://www.infoq.com/cn/articles/ConcurrentHashMap/" target="_blank" rel="external">InfoQ</a><br>可以看到每一位的数据都散开了，并且ConcurrentHashMap中是使用预hash值的高位参与运算的。比如之前说的先将hash值向右按位移动28位，再与15做&amp;运算，得到的结果都别为：4，15，7，8，没有冲突！</p>
+<h1 id="注意事项">注意事项</h1><ul>
+<li>ConcurrentHashMap中的key和value值都不能为null。</li>
+<li>ConcurrentHashMap的整个操作过程中大量使用了Unsafe类来获取Segment/HashEntry，这里Unsafe的主要作用是提供原子操作。Unsafe这个类比较恐怖，破坏力极强，一般场景不建议使用，如果有兴趣可以到这里做详细的了解<a href="http://blog.csdn.net/fenglibing/article/details/17138079" target="_blank" rel="external">Java中鲜为人知的特性</a></li>
+<li>ConcurrentHashMap是线程安全的类并不能保证使用了ConcurrentHashMap的操作都是线程安全的！</li>
+<li>本文为作者个人理解，如果有误，请留言相告，感激不尽。</li>
+<li>转载请注明出处：<a href="http://qifuguang.me/2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/">http://qifuguang.me/2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/</a></li>
+</ul>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          <i class="icon-tag" style="display: inline-block;margin: 0 2px;"></i>
+          
+            <a href="/tags/Java并发包学习/" rel="tag">Java并发包学习</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/09/11/Thrift入门教程/" rel="prev">Thrift入门教程</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/09/08/UTF8编码/" rel="next">UTF8编码</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+    
+        <!-- UJian Button BEGIN -->
+        <div class="ujian-hook"></div>
+        <script type="text/javascript">var ujian_config = {picSize:84,textHeight:45};</script>
+        <script type="text/javascript" src="http://v1.ujian.cc/code/ujian.js?uid=2051639"></script>
+        <a href="http://www.ujian.cc" style="border:0;"><img src="http://img.ujian.cc/pixel.png" alt="友荐云推荐" style="border:0;padding:0;margin:0;" /></a>
+        <!-- UJian Button END -->
+    
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+
+            </div>
+
+            
+
+            
+              <div class="comments" id="comments">
+                
+                  <div class="ds-thread" data-thread-key="2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/"
+                       data-title="[Java并发包学习八]深度剖析ConcurrentHashMap" data-url="http://qifuguang.me/2015/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/">
+                  </div>
+                
+              </div>
+            
+        </div>
+
+        
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="http://7xlune.com1.z0.glb.clouddn.com/images/qifuguang.png" alt="winwill2012" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">winwill2012</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">互联网技术分享。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">52</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">19</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">18</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/3497016832/profile?topnav=1&wvr=6" target="_blank" rel="external nofollow">新浪微博</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.zhihu.com/people/winwill2012" target="_blank" rel="external nofollow">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://www.douban.com/people/129019278/" target="_blank" rel="external nofollow">豆瓣</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://gitcafe.com/winwill2012" target="_blank" rel="external nofollow">Gitcafe</a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+          <div class="cc-license motion-element" itemprop="license">
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank" rel="external nofollow">
+              <img src="/images/cc-by-nc-sa.svg" alt="Creative Commons" />
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            <p class="site-author-name">友情链接</p>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.csdn.net/winwill2012" target="_blank">我的CSDN博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://blog.163.com/scuqifuguang@126/" target="_blank">我的网易博客</a>
+              </span>
+            
+              <span class="links-of-author-item">
+              <a href="http://lusongsong.com/" target="_blank">卢松松博客</a>
+              </span>
+            
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ConcurrentHashMap的目的"><span class="nav-number">2.</span> <span class="nav-text">ConcurrentHashMap的目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实现原理"><span class="nav-number">3.</span> <span class="nav-text">实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#初始化"><span class="nav-number">3.1.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#put操作"><span class="nav-number">3.2.</span> <span class="nav-text">put操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#get操作"><span class="nav-number">3.3.</span> <span class="nav-text">get操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#size操作"><span class="nav-number">3.4.</span> <span class="nav-text">size操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#containsValue操作"><span class="nav-number">3.5.</span> <span class="nav-text">containsValue操作</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#关于hash"><span class="nav-number">4.</span> <span class="nav-text">关于hash</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#注意事项"><span class="nav-number">5.</span> <span class="nav-text">注意事项</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2015</span>
+  <span class="with-love">
+    <i class="icon-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">winwill2012&nbsp;&nbsp;|&nbsp;&nbsp;winwill2012个人技术博客</span>
+</div>
+
+<div class="powered-by">
+  由Hexo强力驱动
+</div>
+
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<span><a href="http://qifuguang.me/sitemap.xml">google网站地图</a></span>
+<span><a href="http://qifuguang.me/baidusitemap.xml">&nbsp;&nbsp;|&nbsp;&nbsp;百度网站地图</a></span>
+<span id="busuanzi_container_site_pv" style='display:none'> &nbsp;&nbsp;|&nbsp;&nbsp;本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+<br>
+<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1256031805'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s11.cnzz.com/z_stat.php%3Fid%3D1256031805%26online%3D1%26show%3Dline' type='text/javascript'%3E%3C/script%3E"));</script>
+
+        </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+</div>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"winwill2012-hexo"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementById('footer')
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+     
+  	  <script type="text/javascript">
+  		var duoshuo_user_ID = winwill2012
+  	  </script>
+     
+  	<script src="/js/ua-parser.min.js"></script>
+  	<script src="/js/hook-duoshuo.js"></script>
+  
+
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.4"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.4"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.4" id="motion.global"></script>
+
+
+
+  <script type="text/javascript" src="/js/search-toggle.js"></script>
+
+
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.4" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        if (CONFIG.sidebar === 'always') {
+            displaySidebar();
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+<!-- lazyload -->
+<script type="text/javascript" src="/js/lazyload.js"></script>
+<script type="text/javascript">
+    jQuery(function () {
+        jQuery("#posts img").lazyload({
+            placeholder: "/images/loading.gif",
+            effect: "fadeIn"
+        });
+    });
+</script>
+</body>
+</html>
