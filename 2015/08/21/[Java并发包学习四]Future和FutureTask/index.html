@@ -46,7 +46,7 @@
 <meta property="og:url" content="http://qifuguang.me/2015/08/21/[Java并发包学习四]Future和FutureTask/index.html">
 <meta property="og:site_name" content="winwill2012博客">
 <meta property="og:description" content="概述Future主要用来表示线程异步执行的结果，他提供了检查异步执行的程序是否已经执行完毕、是否已经被取消，并且获取执行结果的方法。它是一个接口，接口的定义如下：">
-<meta property="og:updated_time" content="2015-10-25T09:11:47.406Z">
+<meta property="og:updated_time" content="2015-10-26T03:08:00.762Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="[Java并发包学习四]Future和FutureTask">
 <meta name="twitter:description" content="概述Future主要用来表示线程异步执行的结果，他提供了检查异步执行的程序是否已经执行完毕、是否已经被取消，并且获取执行结果的方法。它是一个接口，接口的定义如下：">
@@ -271,7 +271,7 @@
 <p>1440129236549 | 我：小热，你可以开始烧水了…<br>1440129236549 | 我：继续开心地玩Dota…<br>1440129240554 | 我：Oh，我死了…<br>1440129240554 | 我：看看水烧好没…<br>1440129240554 | 我：水还没烧开，小热，你快点烧，我再给你一秒钟…<br>1440129241553 | 热水器：主人，水烧开了   </p>
 </blockquote>
 <p>可以看到，我和小热分工明确，我玩dota，他烧水，<strong>他烧水的时候我并没有傻傻地等着!</strong></p>
-<h1 id="其他">其他</h1><p>FutureTask类实现了Runnable接口和Callable接口，Runnable接口只能执行任务，不能获取结果，能用于new Thread()创建新线程，Callable接口能执行任务也能获取结果，但是却不能用于创建Thread。FutureTask兼具两者的优势！！！</p>
+<h1 id="其他">其他</h1><p>RunnableFuture继承了Runnable接口和Future接口，而FutureTask实现了RunnableFuture接口。所以它既可以作为Runnable被线程执行，又可以作为Future得到Callable的返回值。</p>
 </span>
       
     </div>
